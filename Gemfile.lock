@@ -268,11 +268,15 @@ PLATFORMS
 DEPENDENCIES
   faraday (~> 0.17)
   github-pages
+  jekyll-feed (~> 0.12)
   jekyll-readme-index
   jekyll-remote-theme
   jekyll-sass-converter (~> 1.5, >= 1.5.2)
   jekyll-seo-tag
+  minima
   octokit
+  tzinfo (~> 1.2)
+  tzinfo-data
   webrick (~> 1.8)
 
 BUNDLED WITH
