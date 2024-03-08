@@ -1,5 +1,5 @@
 ---
-layout: home
+layout: page
 title: "About"
 ---
 ![headshot]({{ "/assets/img/headshot_circle.png" | relative_url }})

@@ -13,7 +13,7 @@ I can run code in snippets!
 
 ```r
 a <- c("This")
-lapply(a, str_c, " is cool")
+b <- lapply(a, paste0, " is cool")
 ```
 
 
