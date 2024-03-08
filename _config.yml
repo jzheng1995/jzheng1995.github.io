@@ -1,5 +1,10 @@
-# add the following to _config.yml file
+---
+layout: page
 title: Jason Zheng
+---
+plugins:
+  - jekyll-optional-front-matter
+# add the following to _config.yml file
 logo: /assets/img/headshot_circle.png
 remote_theme: pages-themes/minimal@v0.2.0
 plugins:
