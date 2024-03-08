@@ -1,7 +1,10 @@
----
-layout: page
+
+
 title: Jason Zheng
----
+
+### build settings ###
+url: https://jzheng1995.github.io/
+baseurl: ""
 plugins:
   - jekyll-optional-front-matter
 # add the following to _config.yml file

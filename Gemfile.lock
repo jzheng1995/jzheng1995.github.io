@@ -268,8 +268,7 @@ PLATFORMS
 DEPENDENCIES
   faraday (~> 0.17)
   github-pages
-  jekyll (~> 3.9.5)
-  jekyll-optional-front-matter
+  jekyll-readme-index
   jekyll-remote-theme
   jekyll-sass-converter (~> 1.5, >= 1.5.2)
   jekyll-seo-tag
