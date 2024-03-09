@@ -13,7 +13,3 @@ title: "About"
 - Conducted statistical analyses on longitudinal and hierarchical data
 - Wrote R code to extract, transform, and load survey data for analysis
 
-## Citations
-
-{% bibliography %}
-

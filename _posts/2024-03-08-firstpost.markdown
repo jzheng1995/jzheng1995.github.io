@@ -2,8 +2,7 @@
 layout: post
 title: "First post"
 date: 2024-03-08
-categories: 
-
+categories: jekyll init
 ---
 
 The goal of this post is to add some initial content on this page with _Jekyll_.
