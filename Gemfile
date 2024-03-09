@@ -22,3 +22,7 @@ group :jekyll_plugins do
   gem "jekyll-scholar", "~> 7.1.3"
   gem 'jekyll-optional-front-matter'
 end
+platforms :mingw, :x64_mingw, :mswin, :jruby do
+  gem "tzinfo", "~> 1.2"
+  gem "tzinfo-data"
+end
