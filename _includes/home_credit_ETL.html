@@ -13,7 +13,7 @@
 
 <meta name="date" content="2024-03-08" />
 
-<title>Home credit analysis</title>
+<title>Home credit part 1 - ETL</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1585,7 +1585,7 @@ font-size: 0.95em;
 
 
 
-<h1 class="title toc-ignore">Home credit analysis</h1>
+<h1 class="title toc-ignore">Home credit part 1 - ETL</h1>
 <h4 class="author">Jason</h4>
 <h4 class="date">2024-03-08</h4>
 
@@ -2091,8 +2091,7 @@ Q&amp;A</a>, is defined as:</p>
 <pre><code>...unpaid payment (one is enough) in certain time period. There is also some time tolerance (e.g. one day late is not default) and amount tolerance (if client paid $100 instead of $100.10) ). </code></pre>
 <p>Here’s some information on <code>train_base</code>.</p>
 <ul>
-<li><strong>Column names, type</strong></li>
-</ul>
+<li><p><strong>Column names, type</strong></p>
 <pre class="r"><code># Base training dataset - summary
 # table columns
 base_columns &lt;- dbGetQuery(con, &quot;PRAGMA table_info(train_base)&quot;)
@@ -2224,10 +2223,8 @@ NA
 </tr>
 </tbody>
 </table>
-</div>
-<ul>
-<li><strong>Number of rows</strong></li>
-</ul>
+</div></li>
+<li><p><strong>Number of rows</strong></p>
 <pre class="r"><code># table rows
 base_rows &lt;- dbGetQuery(con, &quot;SELECT COUNT(*) FROM train_base&quot;)
 base_rows %&gt;% head() </code></pre>
@@ -2248,10 +2245,8 @@ COUNT(*)
 </tr>
 </tbody>
 </table>
-</div>
-<ul>
-<li><strong>Number of rows per participant</strong></li>
-</ul>
+</div></li>
+<li><p><strong>Number of rows per participant</strong></p>
 <pre class="r"><code># rows per participant
 base_rows_per_id &lt;- dbGetQuery(con, &quot;SELECT case_id, COUNT(*) FROM train_base GROUP BY case_id&quot;)
 base_rows_per_id %&gt;% head()</code></pre>
@@ -2351,7 +2346,8 @@ user_count
 </tr>
 </tbody>
 </table>
-</div>
+</div></li>
+</ul>
 <p>Now we have an idea of the main table we’ll be working with. Since
 the prediction <code>target</code> is only available for the
 <code>case_id</code> present in <code>train_base</code>, the first step
@@ -2711,40 +2707,40 @@ test_credit_bureau_a_1_1
 <li><p>Create query to <code>INNER JOIN</code> and filter tables by
 <code>train_base$case_id</code>, <code>numgroup</code> and save filtered
 tables with a <code>_id</code> suffix.</p>
-<pre class="r"><code># renew data table
+<pre class="r"><code>  # renew data table
 datatables &lt;- dbListTables(con)
 
-# filter data by id
+  # filter data by id
 id_join_query_revised &lt;- tibble(tables = datatables) %&gt;% 
-# filter for original tables,joined tables 
-filter(
-  # filter out split table names
-  str_detect(tables,str_c(str_c(split_dataset_names,&quot;_\\d&quot;), collapse = &quot;|&quot;),
-             negate = TRUE))%&gt;% 
-filter(str_detect(tables, &quot;id|ID|joined|base&quot;, negate = TRUE)) %&gt;% 
-filter(str_detect(tables, &quot;train|test&quot;)) %&gt;% 
-# create query
-mutate(
-query = case_when(
-  str_detect(tables, &quot;train&quot;) ~ str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,tables, &quot;_id&quot;,&quot; AS SELECT * FROM &quot;,tables,
-              &quot; INNER JOIN train_id ON &quot;, tables),
-  str_detect(tables, &quot;test&quot;) ~ str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,tables, &quot;_id&quot;,&quot; AS SELECT * FROM &quot;,tables,
-              &quot; INNER JOIN test_id ON &quot;, tables)
-),
-query = case_when(
-  str_detect(tables, &quot;train&quot;) ~ str_c(query, &quot;.case_id = train_id.case_id&quot;),
-  str_detect(tables, &quot;test&quot;) ~ str_c(query, &quot;.case_id = test_id.case_id&quot;)
+  # filter for original tables,joined tables 
+  filter(
+# filter out split table names
+str_detect(tables,str_c(str_c(split_dataset_names,&quot;_\\d&quot;), collapse = &quot;|&quot;),
+           negate = TRUE))%&gt;% 
+  filter(str_detect(tables, &quot;id|ID|joined|base&quot;, negate = TRUE)) %&gt;% 
+  filter(str_detect(tables, &quot;train|test&quot;)) %&gt;% 
+  # create query
+  mutate(
+  query = case_when(
+str_detect(tables, &quot;train&quot;) ~ str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,tables, &quot;_id&quot;,&quot; AS SELECT * FROM &quot;,tables,
+            &quot; INNER JOIN train_id ON &quot;, tables),
+str_detect(tables, &quot;test&quot;) ~ str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,tables, &quot;_id&quot;,&quot; AS SELECT * FROM &quot;,tables,
+            &quot; INNER JOIN test_id ON &quot;, tables)
+  ),
+  query = case_when(
+str_detect(tables, &quot;train&quot;) ~ str_c(query, &quot;.case_id = train_id.case_id&quot;),
+str_detect(tables, &quot;test&quot;) ~ str_c(query, &quot;.case_id = test_id.case_id&quot;)
+  )
 )
-)
-# filter rows by num_group
+  # filter rows by num_group
 id_join_query_num &lt;- id_join_query_revised %&gt;% left_join(numgroup_tibble , by = c(&quot;tables&quot; = &quot;table&quot;)) %&gt;% mutate(
-query = case_when(
-  num_group1 == 1 &amp; num_group2 == 0 ~ str_c(query, &quot; AND num_group1 = 0&quot;),
-  num_group1 == 1 &amp; num_group2 == 1  ~ str_c(query, &quot; AND num_group1 = 0 AND num_group2 = 0&quot;),
-  .default = query
+  query = case_when(
+num_group1 == 1 &amp; num_group2 == 0 ~ str_c(query, &quot; AND num_group1 = 0&quot;),
+num_group1 == 1 &amp; num_group2 == 1  ~ str_c(query, &quot; AND num_group1 = 0 AND num_group2 = 0&quot;),
+.default = query
+  )
 )
-)
-# show queries
+  # show queries
 id_join_query_num$query %&gt;% head()</code></pre>
 <pre><code>## [1] &quot;CREATE TABLE IF NOT EXISTS test_applprev_1_U_id AS SELECT * FROM test_applprev_1_U INNER JOIN test_id ON test_applprev_1_U.case_id = test_id.case_id&quot;                                                     
 ## [2] &quot;CREATE TABLE IF NOT EXISTS test_applprev_2_id AS SELECT * FROM test_applprev_2 INNER JOIN test_id ON test_applprev_2.case_id = test_id.case_id AND num_group1 = 0 AND num_group2 = 0&quot;                     
@@ -2785,52 +2781,53 @@ respective tables.</p>
 
 # pick features of interest and rename
 revised_feature_list &lt;- list(
-base = c(&quot;case_id&quot;),
-person_1_id = c(&quot;birth_259D&quot;, #birthdate
-             &quot;education_927M&quot;, # education
-             &quot;empl_employedfrom_271D&quot;, # employ date
-             &quot;empl_employedtotal_800L&quot;, # employ length
-             &quot;empl_industry_691L&quot;, # job industry
-             &quot;familystate_447L&quot;, # relationship
-             &quot;incometype_1044T&quot;, # salary type
-             &quot;mainoccupationinc_384A&quot;# income amount
-             ), 
-static_cb_0_id = c(&quot;riskassesment_940T&quot; #risk assessment - normalized
-                         )) 
+  base = c(&quot;case_id&quot;),
+  person_1_id = c(&quot;birth_259D&quot;, #birthdate
+           &quot;education_927M&quot;, # education
+           &quot;empl_employedfrom_271D&quot;, # employ date
+           &quot;empl_employedtotal_800L&quot;, # employ length
+           &quot;empl_industry_691L&quot;, # job industry
+           &quot;familystate_447L&quot;, # relationship
+           &quot;incometype_1044T&quot;, # salary type
+           &quot;mainoccupationinc_384A&quot;# income amount
+           ), 
+  static_cb_0_id = c(&quot;riskassesment_940T&quot; #risk assessment - normalized
+                       )) 
 # link features of interest to data tables
 revised_features_tbl &lt;- 
-# set up variables as tibble
-tibble(table = names(revised_feature_list),
-       train_table = str_c(&quot;train_&quot;, table),
-       test_table = str_c(&quot;test_&quot;, table),
-     features = revised_feature_list ) %&gt;% unnest(features)</code></pre></li>
+  # set up variables as tibble
+  tibble(table = names(revised_feature_list),
+     train_table = str_c(&quot;train_&quot;, table),
+     test_table = str_c(&quot;test_&quot;, table),
+   features = revised_feature_list ) %&gt;% unnest(features)</code></pre></li>
 <li><p>We’ll then set up the query parts using the mapped tibble.</p>
 <pre class="r"><code># create query for joining relevant features to train_base
 train_join &lt;- revised_features_tbl %&gt;% filter(str_detect(features, &quot;case_id&quot;, negate = TRUE)) %&gt;% na.omit() %&gt;% 
-# table.column query
-mutate(
-table_column = str_c(train_table,&quot;.&quot;, features)) %&gt;% 
-select(train_table, table_column) %&gt;% 
-mutate(
-  join_string = str_c(&quot;LEFT JOIN &quot;, train_table, &quot; ON &quot;),
-  id_string = str_c(&quot;train_base.case_id = &quot;,train_table, &quot;.case_id&quot;),
-  join_id_string = str_c(join_string, id_string)
-) %&gt;% unique()
+  # table.column query
+  mutate(
+  table_column = str_c(train_table,&quot;.&quot;, features)) %&gt;% 
+  select(train_table, table_column) %&gt;% 
+  mutate(
+join_string = str_c(&quot;LEFT JOIN &quot;, train_table, &quot; ON &quot;),
+id_string = str_c(&quot;train_base.case_id = &quot;,train_table, &quot;.case_id&quot;),
+join_id_string = str_c(join_string, id_string)
+  ) %&gt;% unique()
 
 # create query for joining relevant features to train_test
 test_join &lt;- revised_features_tbl %&gt;% filter(str_detect(features, &quot;case_id&quot;, negate = TRUE)) %&gt;% na.omit() %&gt;% 
-# table.column query
-mutate(
-table_column = str_c(test_table,&quot;.&quot;, features)) %&gt;% 
-select(test_table, table_column) %&gt;% 
-mutate(
-  join_string = str_c(&quot;LEFT JOIN &quot;, test_table, &quot; ON &quot;),
-  id_string = str_c(&quot;test_base.case_id = &quot;,test_table, &quot;.case_id&quot;),
-  join_id_string = str_c(join_string, id_string)
-) %&gt;% unique()</code></pre>
+  # table.column query
+  mutate(
+  table_column = str_c(test_table,&quot;.&quot;, features)) %&gt;% 
+  select(test_table, table_column) %&gt;% 
+  mutate(
+join_string = str_c(&quot;LEFT JOIN &quot;, test_table, &quot; ON &quot;),
+id_string = str_c(&quot;test_base.case_id = &quot;,test_table, &quot;.case_id&quot;),
+join_id_string = str_c(join_string, id_string)
+  ) %&gt;% unique()</code></pre>
 <ul>
-<li><p><code>train_base</code> set up</p>
-<pre class="r"><code>train_join %&gt;% select(table_column, join_id_string) %&gt;% head()</code></pre>
+<li><code>train_base</code> set up</li>
+</ul>
+<pre class="r"><code>  train_join %&gt;% select(table_column, join_id_string) %&gt;% head()</code></pre>
 <div class="kable-table">
 <table>
 <thead>
@@ -2900,9 +2897,11 @@ train_person_1_id.case_id
 </tr>
 </tbody>
 </table>
-</div></li>
-<li><p><code>test_base</code> set up</p>
-<pre class="r"><code>test_join %&gt;% select(table_column, join_id_string) %&gt;% head()</code></pre>
+</div>
+<ul>
+<li><code>test_base</code> set up</li>
+</ul>
+<pre class="r"><code>  test_join %&gt;% select(table_column, join_id_string) %&gt;% head()</code></pre>
 <div class="kable-table">
 <table>
 <thead>
@@ -2973,7 +2972,6 @@ test_person_1_id.case_id
 </tbody>
 </table>
 </div></li>
-</ul></li>
 <li><p>The parts can be strung together for the final query.</p>
 <pre class="r"><code># create the final train join query
 
@@ -2983,14 +2981,14 @@ train_join_list &lt;- train_join$join_id_string %&gt;% unique() %&gt;%  str_c(co
 train_table_column_join &lt;- train_join$table_column %&gt;% str_c(collapse = &quot;, &quot;) 
 # full query
 train_join_query &lt;- train_table_column_join   %&gt;% 
-# select train_base columns 
-str_c(&quot;SELECT train_base.*, &quot;,.) %&gt;% 
-# 
-str_c(., &quot; FROM train_base&quot;) %&gt;% 
-# left join table statements
-str_c(., &quot; &quot;,train_join_list) %&gt;% 
-# save as new table
-str_c(&quot;CREATE TABLE IF NOT EXISTS train_joined AS &quot;,.)
+  # select train_base columns 
+  str_c(&quot;SELECT train_base.*, &quot;,.) %&gt;% 
+  # 
+  str_c(., &quot; FROM train_base&quot;) %&gt;% 
+  # left join table statements
+  str_c(., &quot; &quot;,train_join_list) %&gt;% 
+  # save as new table
+  str_c(&quot;CREATE TABLE IF NOT EXISTS train_joined AS &quot;,.)
 
 # create the final train join query
 
@@ -3000,22 +2998,24 @@ test_join_list &lt;- test_join$join_id_string %&gt;% unique() %&gt;%  str_c(coll
 test_table_column_join &lt;- test_join$table_column %&gt;% str_c(collapse = &quot;, &quot;) 
 # full query
 test_join_query &lt;- test_table_column_join   %&gt;% 
-# select test_base columns 
-str_c(&quot;SELECT test_base.*, &quot;,.) %&gt;% 
-# 
-str_c(., &quot; FROM test_base&quot;) %&gt;% 
-# left join table statements
-str_c(., &quot; &quot;,test_join_list) %&gt;% 
-# save as new table
-str_c(&quot;CREATE TABLE IF NOT EXISTS test_joined AS &quot;,.)</code></pre>
+  # select test_base columns 
+  str_c(&quot;SELECT test_base.*, &quot;,.) %&gt;% 
+  # 
+  str_c(., &quot; FROM test_base&quot;) %&gt;% 
+  # left join table statements
+  str_c(., &quot; &quot;,test_join_list) %&gt;% 
+  # save as new table
+  str_c(&quot;CREATE TABLE IF NOT EXISTS test_joined AS &quot;,.)</code></pre>
 <ul>
-<li><p><code>train_base</code> join query</p>
-<pre class="r"><code>    train_join_query </code></pre>
-<pre><code>## [1] &quot;CREATE TABLE IF NOT EXISTS train_joined AS SELECT train_base.*, train_person_1_id.birth_259D, train_person_1_id.education_927M, train_person_1_id.empl_employedfrom_271D, train_person_1_id.empl_employedtotal_800L, train_person_1_id.empl_industry_691L, train_person_1_id.familystate_447L, train_person_1_id.incometype_1044T, train_person_1_id.mainoccupationinc_384A, train_static_cb_0_id.riskassesment_940T FROM train_base LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id LEFT JOIN train_static_cb_0_id ON train_base.case_id = train_static_cb_0_id.case_id&quot;</code></pre></li>
-<li><p><code>test_base</code> join query</p>
-<pre class="r"><code>    test_join_query</code></pre>
+<li><code>train_base</code> join query</li>
+</ul>
+<pre class="r"><code>train_join_query </code></pre>
+<pre><code>## [1] &quot;CREATE TABLE IF NOT EXISTS train_joined AS SELECT train_base.*, train_person_1_id.birth_259D, train_person_1_id.education_927M, train_person_1_id.empl_employedfrom_271D, train_person_1_id.empl_employedtotal_800L, train_person_1_id.empl_industry_691L, train_person_1_id.familystate_447L, train_person_1_id.incometype_1044T, train_person_1_id.mainoccupationinc_384A, train_static_cb_0_id.riskassesment_940T FROM train_base LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id LEFT JOIN train_static_cb_0_id ON train_base.case_id = train_static_cb_0_id.case_id&quot;</code></pre>
+<ul>
+<li><code>test_base</code> join query</li>
+</ul>
+<pre class="r"><code>test_join_query</code></pre>
 <pre><code>## [1] &quot;CREATE TABLE IF NOT EXISTS test_joined AS SELECT test_base.*, test_person_1_id.birth_259D, test_person_1_id.education_927M, test_person_1_id.empl_employedfrom_271D, test_person_1_id.empl_employedtotal_800L, test_person_1_id.empl_industry_691L, test_person_1_id.familystate_447L, test_person_1_id.incometype_1044T, test_person_1_id.mainoccupationinc_384A, test_static_cb_0_id.riskassesment_940T FROM test_base LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id LEFT JOIN test_static_cb_0_id ON test_base.case_id = test_static_cb_0_id.case_id&quot;</code></pre></li>
-</ul></li>
 </ul>
 <pre class="r"><code># join tables with selected features
 dbExecute(con, test_join_query)
@@ -3034,49 +3034,55 @@ saveRDS(train_joined_df,&quot;train_joined_df.rds&quot;)
 test_joined_df &lt;- dbGetQuery(con, &quot;SELECT * FROM test_joined&quot;) %&gt;% tibble()
 saveRDS(test_joined_df,&quot;test_joined_df.rds&quot;)</code></pre>
 <ul>
-<li><p>Import and define variable types</p>
+<li>Import and define variable types.
+<ul>
+<li>`</li>
+<li><code>categorical</code> variables (e.g., )</li>
+<li><code>numeric</code>:</li>
+</ul>
 <pre class="r fold_show"><code>train_joined_df&lt;- read_rds(&quot;train_joined_df.rds&quot;)
 # define train table variables
 train_joined_tbl &lt;- train_joined_df %&gt;%   
-# convert date to numeric
-mutate(
-date_decision = as_date(date_decision),
-birth_259D = as_date(birth_259D),
-age = time_length(difftime(date_decision, birth_259D), &quot;years&quot;), 
-month.n = month(date_decision),
-year.n = year(date_decision),
-week.n = WEEK_NUM %&gt;% as.numeric())  %&gt;%
-# label numeric, factors
-mutate(
-  across(c(matches(&quot;mainoccupationinc_384A|riskassesment_940T|
-                   age|\\.n&quot;)), 
-         ~ as.numeric(.)),
-  across(c(matches(&quot;education_927M|empl_employedtotal_800L|empl_industry_691L|
-                   familystate_447L|incometype_1044T|target|familystate_447L&quot;)), 
-         ~ as.factor(.))) </code></pre>
+  # convert date to numeric
+  mutate(
+  date_decision = as_date(date_decision),
+  birth_259D = as_date(birth_259D),
+  age = time_length(difftime(date_decision, birth_259D), &quot;years&quot;), 
+  month.n = month(date_decision),
+  year.n = year(date_decision),
+  week.n = WEEK_NUM %&gt;% as.numeric())  %&gt;%
+  # label numeric, factors
+  mutate(
+across(c(matches(&quot;mainoccupationinc_384A|riskassesment_940T|
+                 age|\\.n&quot;)), 
+       ~ as.numeric(.)),
+across(c(matches(&quot;education_927M|empl_employedtotal_800L|empl_industry_691L|
+                 familystate_447L|incometype_1044T|target|familystate_447L&quot;)), 
+       ~ as.factor(.))) </code></pre>
 <pre class="r"><code>test_joined_df&lt;- read_rds(&quot;test_joined_df.rds&quot;)
 
 # define test table variables
 test_joined_tbl &lt;- test_joined_df %&gt;%   
-# convert date to numeric
-mutate(
-date_decision = as_date(date_decision),
-birth_259D = as_date(birth_259D),
-age = time_length(difftime(date_decision, birth_259D), &quot;years&quot;),
-month.n = month(date_decision),
-year.n = year(date_decision),
-week.n = WEEK_NUM %&gt;% as.numeric()) %&gt;%
-# label numeric, factors
-mutate(
-  across(c(matches(&quot;mainoccupationinc_384A|riskassesment_940T|
-                   age|\\.n&quot;)), 
-         ~ as.numeric(.)),
-  across(c(matches(&quot;education_927M|empl_employedtotal_800L|empl_industry_691L|
-                   familystate_447L|incometype_1044T|target|familystate_447L&quot;)), 
-         ~ as.factor(.))) </code></pre>
+  # convert date to numeric
+  mutate(
+  date_decision = as_date(date_decision),
+  birth_259D = as_date(birth_259D),
+  age = time_length(difftime(date_decision, birth_259D), &quot;years&quot;),
+  month.n = month(date_decision),
+  year.n = year(date_decision),
+  week.n = WEEK_NUM %&gt;% as.numeric()) %&gt;%
+  # label numeric, factors
+  mutate(
+across(c(matches(&quot;mainoccupationinc_384A|riskassesment_940T|
+                 age|\\.n&quot;)), 
+       ~ as.numeric(.)),
+across(c(matches(&quot;education_927M|empl_employedtotal_800L|empl_industry_691L|
+                 familystate_447L|incometype_1044T|target|familystate_447L&quot;)), 
+       ~ as.factor(.))) </code></pre>
 <ul>
-<li><p><code>train</code> df</p>
-<pre class="r"><code> train_joined_tbl %&gt;% glimpse()</code></pre>
+<li><code>train</code> df</li>
+</ul>
+<pre class="r"><code>train_joined_tbl %&gt;% glimpse()</code></pre>
 <pre><code>## Rows: 1,526,659
 ## Columns: 18
 ## $ case_id                 &lt;int&gt; 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 1…
@@ -3096,8 +3102,10 @@ mutate(
 ## $ age                     &lt;dbl&gt; 32.50924, 61.42368, 44.09309, 25.42368, 25.0075…
 ## $ month.n                 &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,…
 ## $ year.n                  &lt;dbl&gt; 2019, 2019, 2019, 2019, 2019, 2019, 2019, 2019,…
-## $ week.n                  &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…</code></pre></li>
-<li><p><code>test</code> df</p>
+## $ week.n                  &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…</code></pre>
+<ul>
+<li><code>test</code> df</li>
+</ul>
 <pre class="r"><code>test_joined_tbl %&gt;% glimpse()</code></pre>
 <pre><code>## Rows: 10
 ## Columns: 17
@@ -3118,7 +3126,6 @@ mutate(
 ## $ month.n                 &lt;dbl&gt; 10, 10, 10, 10, 10, 10, 10, 10, 10, 10
 ## $ year.n                  &lt;dbl&gt; 2020, 2020, 2020, 2020, 2020, 2020, 2020, 2020,…
 ## $ week.n                  &lt;dbl&gt; 92, 92, 92, 92, 92, 92, 92, 92, 92, 92</code></pre></li>
-</ul></li>
 </ul>
 <div id="summary-statistics" class="section level3" number="0.6.1">
 <h3><span class="header-section-number">0.6.1</span> Summary

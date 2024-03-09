@@ -1,90 +1,5 @@
 <!DOCTYPE html>
 
-<html lang="en"><head>
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>Home credit part 1: ETL | Jason Zheng</title>
-<meta name="generator" content="Jekyll v3.9.5" />
-<meta property="og:title" content="Home credit part 1: ETL" />
-<meta property="og:locale" content="en_US" />
-<meta name="description" content="&lt;!DOCTYPE html&gt; Home credit analysis Code Show All Code Hide All Code Home credit analysis Jason 2024-03-08 0.1 Introduction This is primarily an ETL document for the 2024 home credit competition data on Kaggle. This will also be a first attempt at 1) a kaggle competition, 2) approaching this dataset, and 3) documenting the bottom-up process for public review. This will primarily be a reference for myself on how to improve on all these aspects. The goal of this competition is to predict target class from all the provided features. 0.2 Set up 0.2.1 Libraries library(tidyverse) library(here) library(DBI) library(RSQLite) library(reticulate) library(tools) library(data.tree) con &lt;- dbConnect(SQLite(), &quot;mydb&quot;) 0.2.2 File import When I first approached these data, I attempted to read the all the csv files into my R environment through read_csv(). As it turns out, the data contained millions of rows for multiple files and were clearly too big to import for my laptop memory. My roundabout strategy in circumventing this problem was creating a local relational database (SQLite), trim the data down on the database side, and then import a data table that’s hopefully small enough to work with. To do all this, I planned on reading each csv data file into a local database. I’m not a fan of manually writing all my file names so first I set up all the folder paths to read into a local SQLite database. # folder paths train_folder_path &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;train&quot;) %&gt;% str_c(.,&quot;/&quot;) test_folder_path &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;test&quot;) %&gt;% str_c(.,&quot;/&quot;) # file paths train_names &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;train&quot;) %&gt;% list.files() test_names &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;test&quot;) %&gt;% list.files() # test/train full file paths train_paths &lt;- str_c(train_folder_path, train_names) test_paths &lt;- str_c(test_folder_path, test_names) # Names for each data table test_names_noext &lt;- test_names %&gt;% file_path_sans_ext() train_names_noext &lt;- train_names %&gt;% file_path_sans_ext() I then iterated the creation of a database table for each csv by running a dbWriteTable() for each filepath. # Import all csv files into one SQL database # for each csv file in train folder, read into mydb for (i in seq(length(train_paths))){ dbWriteTable(con, train_names_noext[i], train_paths[i], overwrite = TRUE) } # for each csv file in test folder, read into mydb for (i in seq(length(test_paths))){ dbWriteTable(con, test_names_noext[i], test_paths[i], overwrite = TRUE) } 0.3 Overview 0.3.1 SQL overview Since the data is relatively unknown at this point, here are some useful SQL/r functions to extract some useful overviews. We’ll perform these on the train subset of csv files. dbListFields: DBI function to examine column names &quot;PRAGMA table_info&quot;: SQL statement to examine column data type # table fields train_fields &lt;- tibble(table_name = train_names_noext) %&gt;% mutate( fields = map(table_name, ~dbListFields(con, .)), info = map(table_name, ~dbGetQuery(con, str_c(&quot;PRAGMA table_info(&quot;,.,&quot;)&quot;))) ) # show train_fields %&gt;% select(info) %&gt;% unnest(info) %&gt;% head() %&gt;% kable() cid name type notnull dflt_value pk 0 case_id INTEGER 0 NA 0 1 actualdpd_943P REAL 0 NA 0 2 annuity_853A REAL 0 NA 0 3 approvaldate_319D TEXT 0 NA 0 4 byoccupationinc_3656910L REAL 0 NA 0 5 cancelreason_3545846M TEXT 0 NA 0 dbListTables: DBI function to examine existing table names # table names datatables &lt;- dbListTables(con) # original table names original_table_names &lt;- tibble(table = datatables) %&gt;% # filter out future added table names filter(str_detect(table, &quot;test|train&quot;), str_detect(table, &quot;id|ID|_U|joined&quot;, negate = TRUE)) # show original_table_names %&gt;% head() %&gt;% kable() table test_applprev_1_0 test_applprev_1_1 test_applprev_1_2 test_applprev_2 test_base test_credit_bureau_a_1_0 There are 1139 columns across 68 tables. Some recurring columns are case_id, num_group1, and num_group2. case_id is clearly an unique row identifier for each person. Based on the Kaggle data description, num_group1 and num_group2 are meant to index case_id when there are multiple row entries per case_id (e.g. historical loan contracts). 0.3.2 File naming patterns We can also examine the structure of the files with a data.tree below. # set up nodes homecredit&lt;- Node$new(&quot;home-credit-credit-risk-model-stability&quot;) csvfiles &lt;- homecredit$AddChild(&quot;csv_files&quot;) train &lt;- csvfiles$AddChild(&quot;train&quot;) test &lt;- csvfiles$AddChild(&quot;test&quot;) # add train nodes for (i in (original_table_names %&gt;% filter(str_detect(table, &quot;train&quot;)) %&gt;% pull(table))){ train$AddChild(i)} # add test nodes for (i in (original_table_names %&gt;% filter(str_detect(table, &quot;test&quot;)) %&gt;% pull(table))){ test$AddChild(i)} # show homecredit %&gt;% as.data.frame() %&gt;% as.matrix() %&gt;% print(quote=FALSE) ## levelName ## [1,] home-credit-credit-risk-model-stability ## [2,] °--csv_files ## [3,] ¦--train ## [4,] ¦ ¦--train_applprev_1_0 ## [5,] ¦ ¦--train_applprev_1_1 ## [6,] ¦ ¦--train_applprev_2 ## [7,] ¦ ¦--train_base ## [8,] ¦ ¦--train_credit_bureau_a_1_0 ## [9,] ¦ ¦--train_credit_bureau_a_1_1 ## [10,] ¦ ¦--train_credit_bureau_a_1_2 ## [11,] ¦ ¦--train_credit_bureau_a_1_3 ## [12,] ¦ ¦--train_credit_bureau_a_2_0 ## [13,] ¦ ¦--train_credit_bureau_a_2_1 ## [14,] ¦ ¦--train_credit_bureau_a_2_10 ## [15,] ¦ ¦--train_credit_bureau_a_2_2 ## [16,] ¦ ¦--train_credit_bureau_a_2_3 ## [17,] ¦ ¦--train_credit_bureau_a_2_4 ## [18,] ¦ ¦--train_credit_bureau_a_2_5 ## [19,] ¦ ¦--train_credit_bureau_a_2_6 ## [20,] ¦ ¦--train_credit_bureau_a_2_7 ## [21,] ¦ ¦--train_credit_bureau_a_2_8 ## [22,] ¦ ¦--train_credit_bureau_a_2_9 ## [23,] ¦ ¦--train_credit_bureau_b_1 ## [24,] ¦ ¦--train_credit_bureau_b_2 ## [25,] ¦ ¦--train_debitcard_1 ## [26,] ¦ ¦--train_deposit_1 ## [27,] ¦ ¦--train_other_1 ## [28,] ¦ ¦--train_person_1 ## [29,] ¦ ¦--train_person_2 ## [30,] ¦ ¦--train_static_0_0 ## [31,] ¦ ¦--train_static_0_1 ## [32,] ¦ ¦--train_static_cb_0 ## [33,] ¦ ¦--train_tax_registry_a_1 ## [34,] ¦ ¦--train_tax_registry_b_1 ## [35,] ¦ °--train_tax_registry_c_1 ## [36,] °--test ## [37,] ¦--test_applprev_1_0 ## [38,] ¦--test_applprev_1_1 ## [39,] ¦--test_applprev_1_2 ## [40,] ¦--test_applprev_2 ## [41,] ¦--test_base ## [42,] ¦--test_credit_bureau_a_1_0 ## [43,] ¦--test_credit_bureau_a_1_1 ## [44,] ¦--test_credit_bureau_a_1_2 ## [45,] ¦--test_credit_bureau_a_1_3 ## [46,] ¦--test_credit_bureau_a_1_4 ## [47,] ¦--test_credit_bureau_a_2_0 ## [48,] ¦--test_credit_bureau_a_2_1 ## [49,] ¦--test_credit_bureau_a_2_10 ## [50,] ¦--test_credit_bureau_a_2_11 ## [51,] ¦--test_credit_bureau_a_2_2 ## [52,] ¦--test_credit_bureau_a_2_3 ## [53,] ¦--test_credit_bureau_a_2_4 ## [54,] ¦--test_credit_bureau_a_2_5 ## [55,] ¦--test_credit_bureau_a_2_6 ## [56,] ¦--test_credit_bureau_a_2_7 ## [57,] ¦--test_credit_bureau_a_2_8 ## [58,] ¦--test_credit_bureau_a_2_9 ## [59,] ¦--test_credit_bureau_b_1 ## [60,] ¦--test_credit_bureau_b_2 ## [61,] ¦--test_debitcard_1 ## [62,] ¦--test_deposit_1 ## [63,] ¦--test_other_1 ## [64,] ¦--test_person_1 ## [65,] ¦--test_person_2 ## [66,] ¦--test_static_0_0 ## [67,] ¦--test_static_0_1 ## [68,] ¦--test_static_0_2 ## [69,] ¦--test_static_cb_0 ## [70,] ¦--test_tax_registry_a_1 ## [71,] ¦--test_tax_registry_b_1 ## [72,] °--test_tax_registry_c_1 We see that all the original csv files are organized by a prefix test_ or train_. These can be further related by numeral suffixes that denote either 1) related tables split by columns (train_person_1, train_person_2) or 2) related tables split by rows (train_credit_bureau_a_2_1,train_credit_bureau_a_2_2,…,train_credit_bureau_a_2_8). In addition, a feature_definitions.csv file was provided that mapped column names to feature definitions. For future reference, we create a tibble to map feature definitions to column names to table names. # import feature definitions features &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;feature_definitions.csv&quot;) %&gt;% read_csv(show_col_types = FALSE) # table fields mapped to feature description train_features &lt;- train_fields %&gt;% unnest(everything()) %&gt;% left_join(features, by = c(&quot;fields&quot; = &quot;Variable&quot;)) %&gt;% select(fields, everything()) train_features %&gt;% select(fields, table_name,Description ) %&gt;% head() fields table_name Description case_id train_applprev_1_0 NA actualdpd_943P train_applprev_1_0 Days Past Due (DPD) of previous contract (actual). annuity_853A train_applprev_1_0 Monthly annuity for previous applications. approvaldate_319D train_applprev_1_0 Approval Date of Previous Application byoccupationinc_3656910L train_applprev_1_0 Applicant’s income from previous applications. cancelreason_3545846M train_applprev_1_0 Application cancellation reason. 0.3.3 Base_train The goal of this competition is to predict target, which can be found in train_base. The definition of target, found on a forum Q&amp;A, is defined as: ...unpaid payment (one is enough) in certain time period. There is also some time tolerance (e.g. one day late is not default) and amount tolerance (if client paid $100 instead of $100.10) ). Here’s some information on train_base. Column names, type # Base training dataset - summary # table columns base_columns &lt;- dbGetQuery(con, &quot;PRAGMA table_info(train_base)&quot;) base_columns %&gt;% head() cid name type notnull dflt_value pk 0 case_id INTEGER 0 NA 0 1 date_decision TEXT 0 NA 0 2 MONTH INTEGER 0 NA 0 3 WEEK_NUM INTEGER 0 NA 0 4 target INTEGER 0 NA 0 Number of rows # table rows base_rows &lt;- dbGetQuery(con, &quot;SELECT COUNT(*) FROM train_base&quot;) base_rows %&gt;% head() COUNT(*) 1526659 Number of rows per participant # rows per participant base_rows_per_id &lt;- dbGetQuery(con, &quot;SELECT case_id, COUNT(*) FROM train_base GROUP BY case_id&quot;) base_rows_per_id %&gt;% head() case_id COUNT(*) 0 1 1 1 2 1 3 1 4 1 5 1 # sum of rows row_per_users &lt;- dbGetQuery(con, &quot;SELECT row_count, count(*) as user_count FROM (SELECT count(case_id) AS row_count FROM train_base GROUP BY case_id) GROUP BY row_count&quot;) row_per_users %&gt;% head() row_count user_count 1 1526659 Now we have an idea of the main table we’ll be working with. Since the prediction target is only available for the case_id present in train_base, the first step for reducing the data load is to filter for the same case_id in all the other supplemental tables. Before we do that, however, I want to simplify the number of tables I have by joining tables split by rows. This will reduce the number of table LEFT JOINs I will have to perform later on. 0.3.4 Joining split tables The split tables we’re looking for share the same columns but different rows. We want to 1) identify tables sharing the same columns , 2) identify the shared naming scheme that tbese split tables use, and 3) join the split table rows by the common naming scheme. Here are the steps to set this up: Create a tibble with original table names mapped to all column names # renew datatable datatables &lt;- dbListTables(con) # Filter original tables original_fields &lt;- tibble(table = datatables) %&gt;% filter( str_detect(table, &quot;test|train&quot;), str_detect(table, &quot;id|ID|_U|joined&quot;, negate = TRUE) ) %&gt;% mutate( fields = map(table, ~dbListFields(con, .)), info = map(table, ~dbGetQuery(con, str_c(&quot;PRAGMA table_info(&quot;,.,&quot;)&quot;))) ) %&gt;% select(table, fields) %&gt;% unnest(fields) First extract common naming scheme using regex. We then map the naming scheme to original table name and its respective number of columns. We expect that for any set tables sharing a common scheme, the set should share the same number of columns. # map extracted scheme to original table name, # of columns split_datasets_revised &lt;- original_fields %&gt;% select(table) %&gt;% unique() %&gt;% mutate(table_name_extract =str_extract(table,&quot;[A-Za-z_]*_\\d(?=_\\d)&quot; )) %&gt;% select(table, table_name_extract) %&gt;% mutate( ncol = map(table, ~dbGetQuery(con, str_c(&quot;PRAGMA table_info(&quot;,.,&quot;)&quot;)) %&gt;% nrow()) ) %&gt;% unnest(ncol) split_datasets_revised %&gt;% head() table table_name_extract ncol test_applprev_1_0 test_applprev_1 41 test_applprev_1_1 test_applprev_1 41 test_applprev_1_2 test_applprev_1 41 test_applprev_2 NA 6 test_base NA 4 test_credit_bureau_a_1_0 test_credit_bureau_a_1 79 Set up the join query for split tables. Since these are vertical rowbinding, we use UNION statements to create new joined tables suffxied with _U. # joined table set names split_dataset_names &lt;- split_datasets_revised$table_name_extract %&gt;% unique() %&gt;% na.omit() # create UNION/create table query for every split tables union_query_revised &lt;- # extract unique shared table names split_datasets_revised %&gt;% select(table_name_extract) %&gt;% na.omit() %&gt;% unique() %&gt;% # join to identify split tables left_join(split_datasets_revised,by = join_by(table_name_extract)) %&gt;% # add # of split tables per group group_by(table_name_extract) %&gt;% add_tally() %&gt;% # iterate SELECT statements for SQL query mutate(queries = str_c(&quot;SELECT * FROM &quot;, table)) %&gt;% # create single query for each table select(table_name_extract, queries) %&gt;% group_by(table_name_extract) %&gt;% nest(nested_query = queries) %&gt;% # create combined table mutate( combined_query = nested_query[[1]] %&gt;% pull(queries) %&gt;% paste0(., collapse = &quot; &quot;), union_query = str_replace_all(combined_query,&quot;(\\d )(?=SELECT)&quot;,&quot;\\1UNION &quot; ), write_query = str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,table_name_extract,&quot;_U&quot;,&quot; AS &quot;, union_query)) # examine the queries union_query_revised %&gt;% select(table_name_extract,write_query) %&gt;% head() table_name_extract write_query test_applprev_1 CREATE TABLE IF NOT EXISTS test_applprev_1_U AS SELECT * FROM test_applprev_1_0 UNION SELECT * FROM test_applprev_1_1 UNION SELECT * FROM test_applprev_1_2 test_credit_bureau_a_1 CREATE TABLE IF NOT EXISTS test_credit_bureau_a_1_U AS SELECT * FROM test_credit_bureau_a_1_0 UNION SELECT * FROM test_credit_bureau_a_1_1 UNION SELECT * FROM test_credit_bureau_a_1_2 UNION SELECT * FROM test_credit_bureau_a_1_3 UNION SELECT * FROM test_credit_bureau_a_1_4 test_credit_bureau_a_2 CREATE TABLE IF NOT EXISTS test_credit_bureau_a_2_U AS SELECT * FROM test_credit_bureau_a_2_0 UNION SELECT * FROM test_credit_bureau_a_2_1 UNION SELECT * FROM test_credit_bureau_a_2_10 UNION SELECT * FROM test_credit_bureau_a_2_11 UNION SELECT * FROM test_credit_bureau_a_2_2 UNION SELECT * FROM test_credit_bureau_a_2_3 UNION SELECT * FROM test_credit_bureau_a_2_4 UNION SELECT * FROM test_credit_bureau_a_2_5 UNION SELECT * FROM test_credit_bureau_a_2_6 UNION SELECT * FROM test_credit_bureau_a_2_7 UNION SELECT * FROM test_credit_bureau_a_2_8 UNION SELECT * FROM test_credit_bureau_a_2_9 test_static_0 CREATE TABLE IF NOT EXISTS test_static_0_U AS SELECT * FROM test_static_0_0 UNION SELECT * FROM test_static_0_1 UNION SELECT * FROM test_static_0_2 train_applprev_1 CREATE TABLE IF NOT EXISTS train_applprev_1_U AS SELECT * FROM train_applprev_1_0 UNION SELECT * FROM train_applprev_1_1 train_credit_bureau_a_1 CREATE TABLE IF NOT EXISTS train_credit_bureau_a_1_U AS SELECT * FROM train_credit_bureau_a_1_0 UNION SELECT * FROM train_credit_bureau_a_1_1 UNION SELECT * FROM train_credit_bureau_a_1_2 UNION SELECT * FROM train_credit_bureau_a_1_3 # SQL - union # execute each query union_query_revised$write_query %&gt;% walk(~dbExecute(con,.)) 0.4 Subset supplemental data Since the main focus of the operation is predicting target from train_base, we can reduce our operations to just data that’s available for case_ids that are present in train_base. This can be done by using INNER JOIN and filtering out data from all supplemental sources with train_base$case_id. First subset case_id column from base tables # create IDs to filter out relevant IDs in data tables dbExecute(con,&quot;CREATE TABLE IF NOT EXISTS train_id AS SELECT case_id FROM train_base&quot;) dbExecute(con,&quot;CREATE TABLE IF NOT EXISTS test_id AS SELECT case_id FROM test_base&quot;) Some of supplemental tables have multiple rows per participant. The key for the main participant data is the value 0 for numgroup_1 and numgroup_2. Here we set up a numgroup tibble for future mapping. (1 = 0 mapping, 0 = other number) # numgroup index numgroup_tibble &lt;- original_fields %&gt;% filter(str_detect(fields, &quot;num_group&quot;)) %&gt;% pivot_wider(names_from = fields, values_from = fields, values_fn = ~1, values_fill = 0) numgroup_tibble %&gt;% head() table num_group1 num_group2 test_applprev_1_0 1 0 test_applprev_1_1 1 0 test_applprev_1_2 1 0 test_applprev_2 1 1 test_credit_bureau_a_1_0 1 0 test_credit_bureau_a_1_1 1 0 Create query to INNER JOIN and filter tables by train_base$case_id, numgroup and save filtered tables with a _id suffix. # renew data table datatables &lt;- dbListTables(con) # filter data by id id_join_query_revised &lt;- tibble(tables = datatables) %&gt;% # filter for original tables,joined tables filter( # filter out split table names str_detect(tables,str_c(str_c(split_dataset_names,&quot;_\\d&quot;), collapse = &quot;|&quot;), negate = TRUE))%&gt;% filter(str_detect(tables, &quot;id|ID|joined|base&quot;, negate = TRUE)) %&gt;% filter(str_detect(tables, &quot;train|test&quot;)) %&gt;% # create query mutate( query = case_when( str_detect(tables, &quot;train&quot;) ~ str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,tables, &quot;_id&quot;,&quot; AS SELECT * FROM &quot;,tables, &quot; INNER JOIN train_id ON &quot;, tables), str_detect(tables, &quot;test&quot;) ~ str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,tables, &quot;_id&quot;,&quot; AS SELECT * FROM &quot;,tables, &quot; INNER JOIN test_id ON &quot;, tables) ), query = case_when( str_detect(tables, &quot;train&quot;) ~ str_c(query, &quot;.case_id = train_id.case_id&quot;), str_detect(tables, &quot;test&quot;) ~ str_c(query, &quot;.case_id = test_id.case_id&quot;) ) ) # filter rows by num_group id_join_query_num &lt;- id_join_query_revised %&gt;% left_join(numgroup_tibble , by = c(&quot;tables&quot; = &quot;table&quot;)) %&gt;% mutate( query = case_when( num_group1 == 1 &amp; num_group2 == 0 ~ str_c(query, &quot; AND num_group1 = 0&quot;), num_group1 == 1 &amp; num_group2 == 1 ~ str_c(query, &quot; AND num_group1 = 0 AND num_group2 = 0&quot;), .default = query ) ) # show queries id_join_query_num$query %&gt;% head() ## [1] &quot;CREATE TABLE IF NOT EXISTS test_applprev_1_U_id AS SELECT * FROM test_applprev_1_U INNER JOIN test_id ON test_applprev_1_U.case_id = test_id.case_id&quot; ## [2] &quot;CREATE TABLE IF NOT EXISTS test_applprev_2_id AS SELECT * FROM test_applprev_2 INNER JOIN test_id ON test_applprev_2.case_id = test_id.case_id AND num_group1 = 0 AND num_group2 = 0&quot; ## [3] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_a_1_U_id AS SELECT * FROM test_credit_bureau_a_1_U INNER JOIN test_id ON test_credit_bureau_a_1_U.case_id = test_id.case_id&quot; ## [4] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_a_2_U_id AS SELECT * FROM test_credit_bureau_a_2_U INNER JOIN test_id ON test_credit_bureau_a_2_U.case_id = test_id.case_id&quot; ## [5] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_b_1_id AS SELECT * FROM test_credit_bureau_b_1 INNER JOIN test_id ON test_credit_bureau_b_1.case_id = test_id.case_id AND num_group1 = 0&quot; ## [6] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_b_2_id AS SELECT * FROM test_credit_bureau_b_2 INNER JOIN test_id ON test_credit_bureau_b_2.case_id = test_id.case_id AND num_group1 = 0 AND num_group2 = 0&quot; # execute id_join_query_num$query %&gt;% walk(~dbExecute(con,.)) 0.5 Joining features 0.5.1 Feature subset To facilitate a quick analysis we’re going to pick out some variables that I think are theoretically relevant in predicting target: birth_259D: Birth date education_927M: Education empl_employedfrom_271D: Employment date empl_employedtotal_800L: Employment length empl_industry_691L: Job industry familystate_447L: Family status incometype_1044TL: Salary type mainoccupationinc_384A: Income amount riskassesment_940T: Normalized risk - assessed by credit bureau 0.5.2 Join SQL We can use a tibble to map the selected features to their respective tables. # highlight features of interest and identify within datatables # pick features of interest and rename revised_feature_list &lt;- list( base = c(&quot;case_id&quot;), person_1_id = c(&quot;birth_259D&quot;, #birthdate &quot;education_927M&quot;, # education &quot;empl_employedfrom_271D&quot;, # employ date &quot;empl_employedtotal_800L&quot;, # employ length &quot;empl_industry_691L&quot;, # job industry &quot;familystate_447L&quot;, # relationship &quot;incometype_1044T&quot;, # salary type &quot;mainoccupationinc_384A&quot;# income amount ), static_cb_0_id = c(&quot;riskassesment_940T&quot; #risk assessment - normalized )) # link features of interest to data tables revised_features_tbl &lt;- # set up variables as tibble tibble(table = names(revised_feature_list), train_table = str_c(&quot;train_&quot;, table), test_table = str_c(&quot;test_&quot;, table), features = revised_feature_list ) %&gt;% unnest(features) We’ll then set up the query parts using the mapped tibble. # create query for joining relevant features to train_base train_join &lt;- revised_features_tbl %&gt;% filter(str_detect(features, &quot;case_id&quot;, negate = TRUE)) %&gt;% na.omit() %&gt;% # table.column query mutate( table_column = str_c(train_table,&quot;.&quot;, features)) %&gt;% select(train_table, table_column) %&gt;% mutate( join_string = str_c(&quot;LEFT JOIN &quot;, train_table, &quot; ON &quot;), id_string = str_c(&quot;train_base.case_id = &quot;,train_table, &quot;.case_id&quot;), join_id_string = str_c(join_string, id_string) ) %&gt;% unique() # create query for joining relevant features to train_test test_join &lt;- revised_features_tbl %&gt;% filter(str_detect(features, &quot;case_id&quot;, negate = TRUE)) %&gt;% na.omit() %&gt;% # table.column query mutate( table_column = str_c(test_table,&quot;.&quot;, features)) %&gt;% select(test_table, table_column) %&gt;% mutate( join_string = str_c(&quot;LEFT JOIN &quot;, test_table, &quot; ON &quot;), id_string = str_c(&quot;test_base.case_id = &quot;,test_table, &quot;.case_id&quot;), join_id_string = str_c(join_string, id_string) ) %&gt;% unique() train_base set up train_join %&gt;% select(table_column, join_id_string) %&gt;% head() table_column join_id_string train_person_1_id.birth_259D LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.education_927M LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.empl_employedfrom_271D LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.empl_employedtotal_800L LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.empl_industry_691L LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.familystate_447L LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id test_base set up test_join %&gt;% select(table_column, join_id_string) %&gt;% head() table_column join_id_string test_person_1_id.birth_259D LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.education_927M LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.empl_employedfrom_271D LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.empl_employedtotal_800L LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.empl_industry_691L LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.familystate_447L LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id The parts can be strung together for the final query. # create the final train join query # all join TABLE on TABLE train_join_list &lt;- train_join$join_id_string %&gt;% unique() %&gt;% str_c(collapse = &quot; &quot;) # all TABLE.COLUMNS train_table_column_join &lt;- train_join$table_column %&gt;% str_c(collapse = &quot;, &quot;) # full query train_join_query &lt;- train_table_column_join %&gt;% # select train_base columns str_c(&quot;SELECT train_base.*, &quot;,.) %&gt;% # str_c(., &quot; FROM train_base&quot;) %&gt;% # left join table statements str_c(., &quot; &quot;,train_join_list) %&gt;% # save as new table str_c(&quot;CREATE TABLE IF NOT EXISTS train_joined AS &quot;,.) # create the final train join query # all join TABLE on TABLE test_join_list &lt;- test_join$join_id_string %&gt;% unique() %&gt;% str_c(collapse = &quot; &quot;) # all TABLE.COLUMNS test_table_column_join &lt;- test_join$table_column %&gt;% str_c(collapse = &quot;, &quot;) # full query test_join_query &lt;- test_table_column_join %&gt;% # select test_base columns str_c(&quot;SELECT test_base.*, &quot;,.) %&gt;% # str_c(., &quot; FROM test_base&quot;) %&gt;% # left join table statements str_c(., &quot; &quot;,test_join_list) %&gt;% # save as new table str_c(&quot;CREATE TABLE IF NOT EXISTS test_joined AS &quot;,.) train_base join query train_join_query ## [1] &quot;CREATE TABLE IF NOT EXISTS train_joined AS SELECT train_base.*, train_person_1_id.birth_259D, train_person_1_id.education_927M, train_person_1_id.empl_employedfrom_271D, train_person_1_id.empl_employedtotal_800L, train_person_1_id.empl_industry_691L, train_person_1_id.familystate_447L, train_person_1_id.incometype_1044T, train_person_1_id.mainoccupationinc_384A, train_static_cb_0_id.riskassesment_940T FROM train_base LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id LEFT JOIN train_static_cb_0_id ON train_base.case_id = train_static_cb_0_id.case_id&quot; test_base join query test_join_query ## [1] &quot;CREATE TABLE IF NOT EXISTS test_joined AS SELECT test_base.*, test_person_1_id.birth_259D, test_person_1_id.education_927M, test_person_1_id.empl_employedfrom_271D, test_person_1_id.empl_employedtotal_800L, test_person_1_id.empl_industry_691L, test_person_1_id.familystate_447L, test_person_1_id.incometype_1044T, test_person_1_id.mainoccupationinc_384A, test_static_cb_0_id.riskassesment_940T FROM test_base LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id LEFT JOIN test_static_cb_0_id ON test_base.case_id = test_static_cb_0_id.case_id&quot; # join tables with selected features dbExecute(con, test_join_query) dbExecute(con, train_join_query) 0.6 Data analysis Now that we have a dataset with all our relevant features, we can move into data anaysis and prediction. First we need to define our variable types across our test and train data. # read train table train_joined_df &lt;- dbGetQuery(con, &quot;SELECT * FROM train_joined&quot;) %&gt;% tibble() saveRDS(train_joined_df,&quot;train_joined_df.rds&quot;) # read test table test_joined_df &lt;- dbGetQuery(con, &quot;SELECT * FROM test_joined&quot;) %&gt;% tibble() saveRDS(test_joined_df,&quot;test_joined_df.rds&quot;) Import and define variable types train_joined_df&lt;- read_rds(&quot;train_joined_df.rds&quot;) # define train table variables train_joined_tbl &lt;- train_joined_df %&gt;% # convert date to numeric mutate( date_decision = as_date(date_decision), birth_259D = as_date(birth_259D), age = time_length(difftime(date_decision, birth_259D), &quot;years&quot;), month.n = month(date_decision), year.n = year(date_decision), week.n = WEEK_NUM %&gt;% as.numeric()) %&gt;% # label numeric, factors mutate( across(c(matches(&quot;mainoccupationinc_384A|riskassesment_940T| age|\\.n&quot;)), ~ as.numeric(.)), across(c(matches(&quot;education_927M|empl_employedtotal_800L|empl_industry_691L| familystate_447L|incometype_1044T|target|familystate_447L&quot;)), ~ as.factor(.))) test_joined_df&lt;- read_rds(&quot;test_joined_df.rds&quot;) # define test table variables test_joined_tbl &lt;- test_joined_df %&gt;% # convert date to numeric mutate( date_decision = as_date(date_decision), birth_259D = as_date(birth_259D), age = time_length(difftime(date_decision, birth_259D), &quot;years&quot;), month.n = month(date_decision), year.n = year(date_decision), week.n = WEEK_NUM %&gt;% as.numeric()) %&gt;% # label numeric, factors mutate( across(c(matches(&quot;mainoccupationinc_384A|riskassesment_940T| age|\\.n&quot;)), ~ as.numeric(.)), across(c(matches(&quot;education_927M|empl_employedtotal_800L|empl_industry_691L| familystate_447L|incometype_1044T|target|familystate_447L&quot;)), ~ as.factor(.))) train df train_joined_tbl %&gt;% glimpse() ## Rows: 1,526,659 ## Columns: 18 ## $ case_id &lt;int&gt; 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 1… ## $ date_decision &lt;date&gt; 2019-01-03, 2019-01-03, 2019-01-04, 2019-01-03… ## $ MONTH &lt;int&gt; 201901, 201901, 201901, 201901, 201901, 201901,… ## $ WEEK_NUM &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,… ## $ target &lt;fct&gt; 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,… ## $ birth_259D &lt;date&gt; 1986-07-01, 1957-08-01, 1974-12-01, 1993-08-01… ## $ education_927M &lt;fct&gt; P97_36_170, P97_36_170, P97_36_170, P33_146_175… ## $ empl_employedfrom_271D &lt;chr&gt; &quot;2017-09-15&quot;, &quot;2008-10-29&quot;, &quot;2010-02-15&quot;, &quot;2018… ## $ empl_employedtotal_800L &lt;fct&gt; MORE_FIVE, MORE_FIVE, MORE_FIVE, MORE_FIVE, MOR… ## $ empl_industry_691L &lt;fct&gt; OTHER, OTHER, OTHER, OTHER, OTHER, OTHER, EDUCA… ## $ familystate_447L &lt;fct&gt; MARRIED, DIVORCED, MARRIED, MARRIED, MARRIED, M… ## $ incometype_1044T &lt;fct&gt; SALARIED_GOVT, SALARIED_GOVT, EMPLOYED, EMPLOYE… ## $ mainoccupationinc_384A &lt;dbl&gt; 10800, 10000, 14000, 10000, 24000, 64000, 20000… ## $ riskassesment_940T &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,… ## $ age &lt;dbl&gt; 32.50924, 61.42368, 44.09309, 25.42368, 25.0075… ## $ month.n &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,… ## $ year.n &lt;dbl&gt; 2019, 2019, 2019, 2019, 2019, 2019, 2019, 2019,… ## $ week.n &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,… test df test_joined_tbl %&gt;% glimpse() ## Rows: 10 ## Columns: 17 ## $ case_id &lt;int&gt; 57543, 57549, 57551, 57552, 57569, 57630, 57631… ## $ date_decision &lt;date&gt; 2020-10-06, 2020-10-06, 2020-10-06, 2020-10-07… ## $ MONTH &lt;int&gt; 202010, 202010, 202010, 202010, 202010, 202010,… ## $ WEEK_NUM &lt;int&gt; 92, 92, 92, 92, 92, 92, 92, 92, 92, 92 ## $ birth_259D &lt;date&gt; 1996-08-01, 1992-03-01, 1990-08-01, NA, NA, NA,… ## $ education_927M &lt;fct&gt; P97_36_170, P97_36_170, P97_36_170, NA, NA, NA… ## $ empl_employedfrom_271D &lt;chr&gt; &quot;2018-02-15&quot;, &quot;2019-05-04&quot;, &quot;2019-01-15&quot;, NA, N… ## $ empl_employedtotal_800L &lt;fct&gt; MORE_ONE, MORE_ONE, MORE_FIVE, NA, NA, NA, NA, … ## $ empl_industry_691L &lt;fct&gt; OTHER, OTHER, OTHER, NA, NA, NA, NA, NA, NA, NA ## $ familystate_447L &lt;fct&gt; MARRIED, SINGLE, MARRIED, NA, NA, NA, NA, NA, N… ## $ incometype_1044T &lt;fct&gt; EMPLOYED, EMPLOYED, EMPLOYED, NA, NA, NA, NA, N… ## $ mainoccupationinc_384A &lt;dbl&gt; 36000, 15000, 24000, NA, NA, NA, NA, NA, NA, NA ## $ riskassesment_940T &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA ## $ age &lt;dbl&gt; 24.18070, 28.59959, 30.18207, NA, NA, NA, NA, N… ## $ month.n &lt;dbl&gt; 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ## $ year.n &lt;dbl&gt; 2020, 2020, 2020, 2020, 2020, 2020, 2020, 2020,… ## $ week.n &lt;dbl&gt; 92, 92, 92, 92, 92, 92, 92, 92, 92, 92 0.6.1 Summary statistics Here’s a look at some summary statistics. 0.6.2 Nominal variables library(summarytools) # factor level proportions train_joined_tbl %&gt;% select(where(is.factor)) %&gt;% freq() ## Frequencies ## train_joined_tbl$target ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ----------- --------- --------- -------------- --------- -------------- ## 0 1478665 96.86 96.86 96.86 96.86 ## 1 47994 3.14 100.00 3.14 100.00 ## &lt;NA&gt; 0 0.00 100.00 ## Total 1526659 100.00 100.00 100.00 100.00 ## ## train_joined_tbl$education_927M ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ----------------- --------- --------- -------------- --------- -------------- ## a55475b1 798046 52.274 52.274 52.274 52.274 ## P106_81_188 54661 3.580 55.854 3.580 55.854 ## P157_18_172 631 0.041 55.896 0.041 55.896 ## P17_36_170 5481 0.359 56.255 0.359 56.255 ## P33_146_175 258589 16.938 73.193 16.938 73.193 ## P97_36_170 409251 26.807 100.000 26.807 100.000 ## &lt;NA&gt; 0 0.000 100.000 ## Total 1526659 100.000 100.000 100.000 100.000 ## ## train_joined_tbl$empl_employedtotal_800L ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## -------------------- --------- --------- -------------- --------- -------------- ## (Empty string) 998344 65.39 65.39 65.39 65.39 ## LESS_ONE 30467 2.00 67.39 2.00 67.39 ## MORE_FIVE 371321 24.32 91.71 24.32 91.71 ## MORE_ONE 126527 8.29 100.00 8.29 100.00 ## &lt;NA&gt; 0 0.00 100.00 ## Total 1526659 100.00 100.00 100.00 100.00 ## ## train_joined_tbl$empl_industry_691L ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ----------------------- --------- ----------- -------------- ----------- -------------- ## (Empty string) 1004423 65.79223 65.79223 65.79223 65.79223 ## AGRICULTURE 5288 0.34638 66.13861 0.34638 66.13861 ## ARMY_POLICE 14 0.00092 66.13952 0.00092 66.13952 ## ART_MEDIA 245 0.01605 66.15557 0.01605 66.15557 ## CATERING 3508 0.22978 66.38536 0.22978 66.38536 ## CHARITY_RELIGIOUS 25 0.00164 66.38699 0.00164 66.38699 ## EDUCATION 30346 1.98774 68.37473 1.98774 68.37473 ## FINANCE 3150 0.20633 68.58106 0.20633 68.58106 ## GAMING 96 0.00629 68.58735 0.00629 68.58735 ## GOVERNMENT 35440 2.32141 70.90876 2.32141 70.90876 ## HEALTH 13026 0.85324 71.76200 0.85324 71.76200 ## INSURANCE 217 0.01421 71.77621 0.01421 71.77621 ## IT 279 0.01828 71.79449 0.01828 71.79449 ## LAWYER 564 0.03694 71.83143 0.03694 71.83143 ## MANUFACTURING 9035 0.59182 72.42325 0.59182 72.42325 ## MARKETING 239 0.01566 72.43890 0.01566 72.43890 ## MINING 3582 0.23463 72.67353 0.23463 72.67353 ## OTHER 386837 25.33880 98.01233 25.33880 98.01233 ## POST_TELCO 612 0.04009 98.05241 0.04009 98.05241 ## REAL_ESTATE 3680 0.24105 98.29346 0.24105 98.29346 ## RECRUITMENT 85 0.00557 98.29903 0.00557 98.29903 ## TOURISM 513 0.03360 98.33263 0.03360 98.33263 ## TRADE 20696 1.35564 99.68827 1.35564 99.68827 ## TRANSPORTATION 4318 0.28284 99.97111 0.28284 99.97111 ## WELNESS 441 0.02889 100.00000 0.02889 100.00000 ## &lt;NA&gt; 0 0.00000 100.00000 ## Total 1526659 100.00000 100.00000 100.00000 100.00000 ## ## train_joined_tbl$familystate_447L ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ------------------------- --------- --------- -------------- --------- -------------- ## (Empty string) 798046 52.27 52.27 52.27 52.27 ## DIVORCED 19296 1.26 53.54 1.26 53.54 ## LIVING_WITH_PARTNER 8142 0.53 54.07 0.53 54.07 ## MARRIED 484846 31.76 85.83 31.76 85.83 ## SINGLE 183334 12.01 97.84 12.01 97.84 ## WIDOWED 32995 2.16 100.00 2.16 100.00 ## &lt;NA&gt; 0 0.00 100.00 ## Total 1526659 100.00 100.00 100.00 100.00 ## ## train_joined_tbl$incometype_1044T ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ----------------------------- --------- ------------ -------------- ------------ -------------- ## EMPLOYED 298158 19.530098 19.530098 19.530098 19.530098 ## HANDICAPPED 1 0.000066 19.530164 0.000066 19.530164 ## HANDICAPPED_2 7371 0.482819 20.012983 0.482819 20.012983 ## HANDICAPPED_3 5258 0.344412 20.357395 0.344412 20.357395 ## OTHER 11436 0.749087 21.106482 0.749087 21.106482 ## PRIVATE_SECTOR_EMPLOYEE 490562 32.133043 53.239525 32.133043 53.239525 ## RETIRED_PENSIONER 311028 20.373115 73.612640 20.373115 73.612640 ## SALARIED_GOVT 373646 24.474752 98.087392 24.474752 98.087392 ## SELFEMPLOYED 29199 1.912608 100.000000 1.912608 100.000000 ## &lt;NA&gt; 0 0.000000 100.000000 ## Total 1526659 100.000000 100.000000 100.000000 100.000000 0.6.3 Numeric variables # numeric variable summaries train_joined_tbl %&gt;% select(where(is.numeric)) %&gt;% descr() ## Descriptive Statistics ## train_joined_tbl ## N: 1526659 ## ## age case_id mainoccupationinc_384A MONTH month.n ## ----------------- ------------ ------------ ------------------------ ------------ ------------ ## Mean 44.56 1286076.57 57707.48 201936.29 6.43 ## Std.Dev 14.03 718946.59 33348.30 44.74 3.51 ## Min 20.96 0.00 0.00 201901.00 1.00 ## Q1 32.74 766197.00 36000.00 201906.00 3.00 ## Median 42.81 1357358.00 50000.00 201910.00 7.00 ## Q3 56.20 1739023.00 70000.00 202001.00 9.00 ## Max 76.04 2703454.00 200000.00 202010.00 12.00 ## MAD 16.72 721155.91 29652.00 7.41 4.45 ## IQR 23.46 972825.00 34000.00 95.00 6.00 ## CV 0.31 0.56 0.58 0.00 0.55 ## Skewness 0.27 0.14 1.66 0.87 -0.05 ## SE.Skewness 0.00 0.00 0.00 0.00 0.00 ## Kurtosis -1.03 -0.59 3.71 -1.22 -1.23 ## N.Valid 1526659.00 1526659.00 1526659.00 1526659.00 1526659.00 ## Pct.Valid 100.00 100.00 100.00 100.00 100.00 ## ## Table: Table continues below ## ## ## ## riskassesment_940T WEEK_NUM week.n year.n ## ----------------- -------------------- ------------ ------------ ------------ ## Mean 0.23 40.77 40.77 2019.30 ## Std.Dev 0.98 23.80 23.80 0.46 ## Min -3.67 0.00 0.00 2019.00 ## Q1 -0.23 23.00 23.00 2019.00 ## Median 0.37 40.00 40.00 2019.00 ## Q3 0.97 55.00 55.00 2020.00 ## Max 2.12 91.00 91.00 2020.00 ## MAD 0.89 25.20 25.20 0.00 ## IQR 1.20 32.00 32.00 1.00 ## CV 4.32 0.58 0.58 0.00 ## Skewness -0.83 0.30 0.30 0.88 ## SE.Skewness 0.01 0.00 0.00 0.00 ## Kurtosis 0.25 -0.65 -0.65 -1.23 ## N.Valid 53560.00 1526659.00 1526659.00 1526659.00 ## Pct.Valid 3.51 100.00 100.00 100.00 0.6.4 Summary We see that riskassesment_940T has 96.5% missing entries so it may be best to leave it out for now." />
-<meta property="og:description" content="&lt;!DOCTYPE html&gt; Home credit analysis Code Show All Code Hide All Code Home credit analysis Jason 2024-03-08 0.1 Introduction This is primarily an ETL document for the 2024 home credit competition data on Kaggle. This will also be a first attempt at 1) a kaggle competition, 2) approaching this dataset, and 3) documenting the bottom-up process for public review. This will primarily be a reference for myself on how to improve on all these aspects. The goal of this competition is to predict target class from all the provided features. 0.2 Set up 0.2.1 Libraries library(tidyverse) library(here) library(DBI) library(RSQLite) library(reticulate) library(tools) library(data.tree) con &lt;- dbConnect(SQLite(), &quot;mydb&quot;) 0.2.2 File import When I first approached these data, I attempted to read the all the csv files into my R environment through read_csv(). As it turns out, the data contained millions of rows for multiple files and were clearly too big to import for my laptop memory. My roundabout strategy in circumventing this problem was creating a local relational database (SQLite), trim the data down on the database side, and then import a data table that’s hopefully small enough to work with. To do all this, I planned on reading each csv data file into a local database. I’m not a fan of manually writing all my file names so first I set up all the folder paths to read into a local SQLite database. # folder paths train_folder_path &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;train&quot;) %&gt;% str_c(.,&quot;/&quot;) test_folder_path &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;test&quot;) %&gt;% str_c(.,&quot;/&quot;) # file paths train_names &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;train&quot;) %&gt;% list.files() test_names &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;test&quot;) %&gt;% list.files() # test/train full file paths train_paths &lt;- str_c(train_folder_path, train_names) test_paths &lt;- str_c(test_folder_path, test_names) # Names for each data table test_names_noext &lt;- test_names %&gt;% file_path_sans_ext() train_names_noext &lt;- train_names %&gt;% file_path_sans_ext() I then iterated the creation of a database table for each csv by running a dbWriteTable() for each filepath. # Import all csv files into one SQL database # for each csv file in train folder, read into mydb for (i in seq(length(train_paths))){ dbWriteTable(con, train_names_noext[i], train_paths[i], overwrite = TRUE) } # for each csv file in test folder, read into mydb for (i in seq(length(test_paths))){ dbWriteTable(con, test_names_noext[i], test_paths[i], overwrite = TRUE) } 0.3 Overview 0.3.1 SQL overview Since the data is relatively unknown at this point, here are some useful SQL/r functions to extract some useful overviews. We’ll perform these on the train subset of csv files. dbListFields: DBI function to examine column names &quot;PRAGMA table_info&quot;: SQL statement to examine column data type # table fields train_fields &lt;- tibble(table_name = train_names_noext) %&gt;% mutate( fields = map(table_name, ~dbListFields(con, .)), info = map(table_name, ~dbGetQuery(con, str_c(&quot;PRAGMA table_info(&quot;,.,&quot;)&quot;))) ) # show train_fields %&gt;% select(info) %&gt;% unnest(info) %&gt;% head() %&gt;% kable() cid name type notnull dflt_value pk 0 case_id INTEGER 0 NA 0 1 actualdpd_943P REAL 0 NA 0 2 annuity_853A REAL 0 NA 0 3 approvaldate_319D TEXT 0 NA 0 4 byoccupationinc_3656910L REAL 0 NA 0 5 cancelreason_3545846M TEXT 0 NA 0 dbListTables: DBI function to examine existing table names # table names datatables &lt;- dbListTables(con) # original table names original_table_names &lt;- tibble(table = datatables) %&gt;% # filter out future added table names filter(str_detect(table, &quot;test|train&quot;), str_detect(table, &quot;id|ID|_U|joined&quot;, negate = TRUE)) # show original_table_names %&gt;% head() %&gt;% kable() table test_applprev_1_0 test_applprev_1_1 test_applprev_1_2 test_applprev_2 test_base test_credit_bureau_a_1_0 There are 1139 columns across 68 tables. Some recurring columns are case_id, num_group1, and num_group2. case_id is clearly an unique row identifier for each person. Based on the Kaggle data description, num_group1 and num_group2 are meant to index case_id when there are multiple row entries per case_id (e.g. historical loan contracts). 0.3.2 File naming patterns We can also examine the structure of the files with a data.tree below. # set up nodes homecredit&lt;- Node$new(&quot;home-credit-credit-risk-model-stability&quot;) csvfiles &lt;- homecredit$AddChild(&quot;csv_files&quot;) train &lt;- csvfiles$AddChild(&quot;train&quot;) test &lt;- csvfiles$AddChild(&quot;test&quot;) # add train nodes for (i in (original_table_names %&gt;% filter(str_detect(table, &quot;train&quot;)) %&gt;% pull(table))){ train$AddChild(i)} # add test nodes for (i in (original_table_names %&gt;% filter(str_detect(table, &quot;test&quot;)) %&gt;% pull(table))){ test$AddChild(i)} # show homecredit %&gt;% as.data.frame() %&gt;% as.matrix() %&gt;% print(quote=FALSE) ## levelName ## [1,] home-credit-credit-risk-model-stability ## [2,] °--csv_files ## [3,] ¦--train ## [4,] ¦ ¦--train_applprev_1_0 ## [5,] ¦ ¦--train_applprev_1_1 ## [6,] ¦ ¦--train_applprev_2 ## [7,] ¦ ¦--train_base ## [8,] ¦ ¦--train_credit_bureau_a_1_0 ## [9,] ¦ ¦--train_credit_bureau_a_1_1 ## [10,] ¦ ¦--train_credit_bureau_a_1_2 ## [11,] ¦ ¦--train_credit_bureau_a_1_3 ## [12,] ¦ ¦--train_credit_bureau_a_2_0 ## [13,] ¦ ¦--train_credit_bureau_a_2_1 ## [14,] ¦ ¦--train_credit_bureau_a_2_10 ## [15,] ¦ ¦--train_credit_bureau_a_2_2 ## [16,] ¦ ¦--train_credit_bureau_a_2_3 ## [17,] ¦ ¦--train_credit_bureau_a_2_4 ## [18,] ¦ ¦--train_credit_bureau_a_2_5 ## [19,] ¦ ¦--train_credit_bureau_a_2_6 ## [20,] ¦ ¦--train_credit_bureau_a_2_7 ## [21,] ¦ ¦--train_credit_bureau_a_2_8 ## [22,] ¦ ¦--train_credit_bureau_a_2_9 ## [23,] ¦ ¦--train_credit_bureau_b_1 ## [24,] ¦ ¦--train_credit_bureau_b_2 ## [25,] ¦ ¦--train_debitcard_1 ## [26,] ¦ ¦--train_deposit_1 ## [27,] ¦ ¦--train_other_1 ## [28,] ¦ ¦--train_person_1 ## [29,] ¦ ¦--train_person_2 ## [30,] ¦ ¦--train_static_0_0 ## [31,] ¦ ¦--train_static_0_1 ## [32,] ¦ ¦--train_static_cb_0 ## [33,] ¦ ¦--train_tax_registry_a_1 ## [34,] ¦ ¦--train_tax_registry_b_1 ## [35,] ¦ °--train_tax_registry_c_1 ## [36,] °--test ## [37,] ¦--test_applprev_1_0 ## [38,] ¦--test_applprev_1_1 ## [39,] ¦--test_applprev_1_2 ## [40,] ¦--test_applprev_2 ## [41,] ¦--test_base ## [42,] ¦--test_credit_bureau_a_1_0 ## [43,] ¦--test_credit_bureau_a_1_1 ## [44,] ¦--test_credit_bureau_a_1_2 ## [45,] ¦--test_credit_bureau_a_1_3 ## [46,] ¦--test_credit_bureau_a_1_4 ## [47,] ¦--test_credit_bureau_a_2_0 ## [48,] ¦--test_credit_bureau_a_2_1 ## [49,] ¦--test_credit_bureau_a_2_10 ## [50,] ¦--test_credit_bureau_a_2_11 ## [51,] ¦--test_credit_bureau_a_2_2 ## [52,] ¦--test_credit_bureau_a_2_3 ## [53,] ¦--test_credit_bureau_a_2_4 ## [54,] ¦--test_credit_bureau_a_2_5 ## [55,] ¦--test_credit_bureau_a_2_6 ## [56,] ¦--test_credit_bureau_a_2_7 ## [57,] ¦--test_credit_bureau_a_2_8 ## [58,] ¦--test_credit_bureau_a_2_9 ## [59,] ¦--test_credit_bureau_b_1 ## [60,] ¦--test_credit_bureau_b_2 ## [61,] ¦--test_debitcard_1 ## [62,] ¦--test_deposit_1 ## [63,] ¦--test_other_1 ## [64,] ¦--test_person_1 ## [65,] ¦--test_person_2 ## [66,] ¦--test_static_0_0 ## [67,] ¦--test_static_0_1 ## [68,] ¦--test_static_0_2 ## [69,] ¦--test_static_cb_0 ## [70,] ¦--test_tax_registry_a_1 ## [71,] ¦--test_tax_registry_b_1 ## [72,] °--test_tax_registry_c_1 We see that all the original csv files are organized by a prefix test_ or train_. These can be further related by numeral suffixes that denote either 1) related tables split by columns (train_person_1, train_person_2) or 2) related tables split by rows (train_credit_bureau_a_2_1,train_credit_bureau_a_2_2,…,train_credit_bureau_a_2_8). In addition, a feature_definitions.csv file was provided that mapped column names to feature definitions. For future reference, we create a tibble to map feature definitions to column names to table names. # import feature definitions features &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;feature_definitions.csv&quot;) %&gt;% read_csv(show_col_types = FALSE) # table fields mapped to feature description train_features &lt;- train_fields %&gt;% unnest(everything()) %&gt;% left_join(features, by = c(&quot;fields&quot; = &quot;Variable&quot;)) %&gt;% select(fields, everything()) train_features %&gt;% select(fields, table_name,Description ) %&gt;% head() fields table_name Description case_id train_applprev_1_0 NA actualdpd_943P train_applprev_1_0 Days Past Due (DPD) of previous contract (actual). annuity_853A train_applprev_1_0 Monthly annuity for previous applications. approvaldate_319D train_applprev_1_0 Approval Date of Previous Application byoccupationinc_3656910L train_applprev_1_0 Applicant’s income from previous applications. cancelreason_3545846M train_applprev_1_0 Application cancellation reason. 0.3.3 Base_train The goal of this competition is to predict target, which can be found in train_base. The definition of target, found on a forum Q&amp;A, is defined as: ...unpaid payment (one is enough) in certain time period. There is also some time tolerance (e.g. one day late is not default) and amount tolerance (if client paid $100 instead of $100.10) ). Here’s some information on train_base. Column names, type # Base training dataset - summary # table columns base_columns &lt;- dbGetQuery(con, &quot;PRAGMA table_info(train_base)&quot;) base_columns %&gt;% head() cid name type notnull dflt_value pk 0 case_id INTEGER 0 NA 0 1 date_decision TEXT 0 NA 0 2 MONTH INTEGER 0 NA 0 3 WEEK_NUM INTEGER 0 NA 0 4 target INTEGER 0 NA 0 Number of rows # table rows base_rows &lt;- dbGetQuery(con, &quot;SELECT COUNT(*) FROM train_base&quot;) base_rows %&gt;% head() COUNT(*) 1526659 Number of rows per participant # rows per participant base_rows_per_id &lt;- dbGetQuery(con, &quot;SELECT case_id, COUNT(*) FROM train_base GROUP BY case_id&quot;) base_rows_per_id %&gt;% head() case_id COUNT(*) 0 1 1 1 2 1 3 1 4 1 5 1 # sum of rows row_per_users &lt;- dbGetQuery(con, &quot;SELECT row_count, count(*) as user_count FROM (SELECT count(case_id) AS row_count FROM train_base GROUP BY case_id) GROUP BY row_count&quot;) row_per_users %&gt;% head() row_count user_count 1 1526659 Now we have an idea of the main table we’ll be working with. Since the prediction target is only available for the case_id present in train_base, the first step for reducing the data load is to filter for the same case_id in all the other supplemental tables. Before we do that, however, I want to simplify the number of tables I have by joining tables split by rows. This will reduce the number of table LEFT JOINs I will have to perform later on. 0.3.4 Joining split tables The split tables we’re looking for share the same columns but different rows. We want to 1) identify tables sharing the same columns , 2) identify the shared naming scheme that tbese split tables use, and 3) join the split table rows by the common naming scheme. Here are the steps to set this up: Create a tibble with original table names mapped to all column names # renew datatable datatables &lt;- dbListTables(con) # Filter original tables original_fields &lt;- tibble(table = datatables) %&gt;% filter( str_detect(table, &quot;test|train&quot;), str_detect(table, &quot;id|ID|_U|joined&quot;, negate = TRUE) ) %&gt;% mutate( fields = map(table, ~dbListFields(con, .)), info = map(table, ~dbGetQuery(con, str_c(&quot;PRAGMA table_info(&quot;,.,&quot;)&quot;))) ) %&gt;% select(table, fields) %&gt;% unnest(fields) First extract common naming scheme using regex. We then map the naming scheme to original table name and its respective number of columns. We expect that for any set tables sharing a common scheme, the set should share the same number of columns. # map extracted scheme to original table name, # of columns split_datasets_revised &lt;- original_fields %&gt;% select(table) %&gt;% unique() %&gt;% mutate(table_name_extract =str_extract(table,&quot;[A-Za-z_]*_\\d(?=_\\d)&quot; )) %&gt;% select(table, table_name_extract) %&gt;% mutate( ncol = map(table, ~dbGetQuery(con, str_c(&quot;PRAGMA table_info(&quot;,.,&quot;)&quot;)) %&gt;% nrow()) ) %&gt;% unnest(ncol) split_datasets_revised %&gt;% head() table table_name_extract ncol test_applprev_1_0 test_applprev_1 41 test_applprev_1_1 test_applprev_1 41 test_applprev_1_2 test_applprev_1 41 test_applprev_2 NA 6 test_base NA 4 test_credit_bureau_a_1_0 test_credit_bureau_a_1 79 Set up the join query for split tables. Since these are vertical rowbinding, we use UNION statements to create new joined tables suffxied with _U. # joined table set names split_dataset_names &lt;- split_datasets_revised$table_name_extract %&gt;% unique() %&gt;% na.omit() # create UNION/create table query for every split tables union_query_revised &lt;- # extract unique shared table names split_datasets_revised %&gt;% select(table_name_extract) %&gt;% na.omit() %&gt;% unique() %&gt;% # join to identify split tables left_join(split_datasets_revised,by = join_by(table_name_extract)) %&gt;% # add # of split tables per group group_by(table_name_extract) %&gt;% add_tally() %&gt;% # iterate SELECT statements for SQL query mutate(queries = str_c(&quot;SELECT * FROM &quot;, table)) %&gt;% # create single query for each table select(table_name_extract, queries) %&gt;% group_by(table_name_extract) %&gt;% nest(nested_query = queries) %&gt;% # create combined table mutate( combined_query = nested_query[[1]] %&gt;% pull(queries) %&gt;% paste0(., collapse = &quot; &quot;), union_query = str_replace_all(combined_query,&quot;(\\d )(?=SELECT)&quot;,&quot;\\1UNION &quot; ), write_query = str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,table_name_extract,&quot;_U&quot;,&quot; AS &quot;, union_query)) # examine the queries union_query_revised %&gt;% select(table_name_extract,write_query) %&gt;% head() table_name_extract write_query test_applprev_1 CREATE TABLE IF NOT EXISTS test_applprev_1_U AS SELECT * FROM test_applprev_1_0 UNION SELECT * FROM test_applprev_1_1 UNION SELECT * FROM test_applprev_1_2 test_credit_bureau_a_1 CREATE TABLE IF NOT EXISTS test_credit_bureau_a_1_U AS SELECT * FROM test_credit_bureau_a_1_0 UNION SELECT * FROM test_credit_bureau_a_1_1 UNION SELECT * FROM test_credit_bureau_a_1_2 UNION SELECT * FROM test_credit_bureau_a_1_3 UNION SELECT * FROM test_credit_bureau_a_1_4 test_credit_bureau_a_2 CREATE TABLE IF NOT EXISTS test_credit_bureau_a_2_U AS SELECT * FROM test_credit_bureau_a_2_0 UNION SELECT * FROM test_credit_bureau_a_2_1 UNION SELECT * FROM test_credit_bureau_a_2_10 UNION SELECT * FROM test_credit_bureau_a_2_11 UNION SELECT * FROM test_credit_bureau_a_2_2 UNION SELECT * FROM test_credit_bureau_a_2_3 UNION SELECT * FROM test_credit_bureau_a_2_4 UNION SELECT * FROM test_credit_bureau_a_2_5 UNION SELECT * FROM test_credit_bureau_a_2_6 UNION SELECT * FROM test_credit_bureau_a_2_7 UNION SELECT * FROM test_credit_bureau_a_2_8 UNION SELECT * FROM test_credit_bureau_a_2_9 test_static_0 CREATE TABLE IF NOT EXISTS test_static_0_U AS SELECT * FROM test_static_0_0 UNION SELECT * FROM test_static_0_1 UNION SELECT * FROM test_static_0_2 train_applprev_1 CREATE TABLE IF NOT EXISTS train_applprev_1_U AS SELECT * FROM train_applprev_1_0 UNION SELECT * FROM train_applprev_1_1 train_credit_bureau_a_1 CREATE TABLE IF NOT EXISTS train_credit_bureau_a_1_U AS SELECT * FROM train_credit_bureau_a_1_0 UNION SELECT * FROM train_credit_bureau_a_1_1 UNION SELECT * FROM train_credit_bureau_a_1_2 UNION SELECT * FROM train_credit_bureau_a_1_3 # SQL - union # execute each query union_query_revised$write_query %&gt;% walk(~dbExecute(con,.)) 0.4 Subset supplemental data Since the main focus of the operation is predicting target from train_base, we can reduce our operations to just data that’s available for case_ids that are present in train_base. This can be done by using INNER JOIN and filtering out data from all supplemental sources with train_base$case_id. First subset case_id column from base tables # create IDs to filter out relevant IDs in data tables dbExecute(con,&quot;CREATE TABLE IF NOT EXISTS train_id AS SELECT case_id FROM train_base&quot;) dbExecute(con,&quot;CREATE TABLE IF NOT EXISTS test_id AS SELECT case_id FROM test_base&quot;) Some of supplemental tables have multiple rows per participant. The key for the main participant data is the value 0 for numgroup_1 and numgroup_2. Here we set up a numgroup tibble for future mapping. (1 = 0 mapping, 0 = other number) # numgroup index numgroup_tibble &lt;- original_fields %&gt;% filter(str_detect(fields, &quot;num_group&quot;)) %&gt;% pivot_wider(names_from = fields, values_from = fields, values_fn = ~1, values_fill = 0) numgroup_tibble %&gt;% head() table num_group1 num_group2 test_applprev_1_0 1 0 test_applprev_1_1 1 0 test_applprev_1_2 1 0 test_applprev_2 1 1 test_credit_bureau_a_1_0 1 0 test_credit_bureau_a_1_1 1 0 Create query to INNER JOIN and filter tables by train_base$case_id, numgroup and save filtered tables with a _id suffix. # renew data table datatables &lt;- dbListTables(con) # filter data by id id_join_query_revised &lt;- tibble(tables = datatables) %&gt;% # filter for original tables,joined tables filter( # filter out split table names str_detect(tables,str_c(str_c(split_dataset_names,&quot;_\\d&quot;), collapse = &quot;|&quot;), negate = TRUE))%&gt;% filter(str_detect(tables, &quot;id|ID|joined|base&quot;, negate = TRUE)) %&gt;% filter(str_detect(tables, &quot;train|test&quot;)) %&gt;% # create query mutate( query = case_when( str_detect(tables, &quot;train&quot;) ~ str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,tables, &quot;_id&quot;,&quot; AS SELECT * FROM &quot;,tables, &quot; INNER JOIN train_id ON &quot;, tables), str_detect(tables, &quot;test&quot;) ~ str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,tables, &quot;_id&quot;,&quot; AS SELECT * FROM &quot;,tables, &quot; INNER JOIN test_id ON &quot;, tables) ), query = case_when( str_detect(tables, &quot;train&quot;) ~ str_c(query, &quot;.case_id = train_id.case_id&quot;), str_detect(tables, &quot;test&quot;) ~ str_c(query, &quot;.case_id = test_id.case_id&quot;) ) ) # filter rows by num_group id_join_query_num &lt;- id_join_query_revised %&gt;% left_join(numgroup_tibble , by = c(&quot;tables&quot; = &quot;table&quot;)) %&gt;% mutate( query = case_when( num_group1 == 1 &amp; num_group2 == 0 ~ str_c(query, &quot; AND num_group1 = 0&quot;), num_group1 == 1 &amp; num_group2 == 1 ~ str_c(query, &quot; AND num_group1 = 0 AND num_group2 = 0&quot;), .default = query ) ) # show queries id_join_query_num$query %&gt;% head() ## [1] &quot;CREATE TABLE IF NOT EXISTS test_applprev_1_U_id AS SELECT * FROM test_applprev_1_U INNER JOIN test_id ON test_applprev_1_U.case_id = test_id.case_id&quot; ## [2] &quot;CREATE TABLE IF NOT EXISTS test_applprev_2_id AS SELECT * FROM test_applprev_2 INNER JOIN test_id ON test_applprev_2.case_id = test_id.case_id AND num_group1 = 0 AND num_group2 = 0&quot; ## [3] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_a_1_U_id AS SELECT * FROM test_credit_bureau_a_1_U INNER JOIN test_id ON test_credit_bureau_a_1_U.case_id = test_id.case_id&quot; ## [4] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_a_2_U_id AS SELECT * FROM test_credit_bureau_a_2_U INNER JOIN test_id ON test_credit_bureau_a_2_U.case_id = test_id.case_id&quot; ## [5] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_b_1_id AS SELECT * FROM test_credit_bureau_b_1 INNER JOIN test_id ON test_credit_bureau_b_1.case_id = test_id.case_id AND num_group1 = 0&quot; ## [6] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_b_2_id AS SELECT * FROM test_credit_bureau_b_2 INNER JOIN test_id ON test_credit_bureau_b_2.case_id = test_id.case_id AND num_group1 = 0 AND num_group2 = 0&quot; # execute id_join_query_num$query %&gt;% walk(~dbExecute(con,.)) 0.5 Joining features 0.5.1 Feature subset To facilitate a quick analysis we’re going to pick out some variables that I think are theoretically relevant in predicting target: birth_259D: Birth date education_927M: Education empl_employedfrom_271D: Employment date empl_employedtotal_800L: Employment length empl_industry_691L: Job industry familystate_447L: Family status incometype_1044TL: Salary type mainoccupationinc_384A: Income amount riskassesment_940T: Normalized risk - assessed by credit bureau 0.5.2 Join SQL We can use a tibble to map the selected features to their respective tables. # highlight features of interest and identify within datatables # pick features of interest and rename revised_feature_list &lt;- list( base = c(&quot;case_id&quot;), person_1_id = c(&quot;birth_259D&quot;, #birthdate &quot;education_927M&quot;, # education &quot;empl_employedfrom_271D&quot;, # employ date &quot;empl_employedtotal_800L&quot;, # employ length &quot;empl_industry_691L&quot;, # job industry &quot;familystate_447L&quot;, # relationship &quot;incometype_1044T&quot;, # salary type &quot;mainoccupationinc_384A&quot;# income amount ), static_cb_0_id = c(&quot;riskassesment_940T&quot; #risk assessment - normalized )) # link features of interest to data tables revised_features_tbl &lt;- # set up variables as tibble tibble(table = names(revised_feature_list), train_table = str_c(&quot;train_&quot;, table), test_table = str_c(&quot;test_&quot;, table), features = revised_feature_list ) %&gt;% unnest(features) We’ll then set up the query parts using the mapped tibble. # create query for joining relevant features to train_base train_join &lt;- revised_features_tbl %&gt;% filter(str_detect(features, &quot;case_id&quot;, negate = TRUE)) %&gt;% na.omit() %&gt;% # table.column query mutate( table_column = str_c(train_table,&quot;.&quot;, features)) %&gt;% select(train_table, table_column) %&gt;% mutate( join_string = str_c(&quot;LEFT JOIN &quot;, train_table, &quot; ON &quot;), id_string = str_c(&quot;train_base.case_id = &quot;,train_table, &quot;.case_id&quot;), join_id_string = str_c(join_string, id_string) ) %&gt;% unique() # create query for joining relevant features to train_test test_join &lt;- revised_features_tbl %&gt;% filter(str_detect(features, &quot;case_id&quot;, negate = TRUE)) %&gt;% na.omit() %&gt;% # table.column query mutate( table_column = str_c(test_table,&quot;.&quot;, features)) %&gt;% select(test_table, table_column) %&gt;% mutate( join_string = str_c(&quot;LEFT JOIN &quot;, test_table, &quot; ON &quot;), id_string = str_c(&quot;test_base.case_id = &quot;,test_table, &quot;.case_id&quot;), join_id_string = str_c(join_string, id_string) ) %&gt;% unique() train_base set up train_join %&gt;% select(table_column, join_id_string) %&gt;% head() table_column join_id_string train_person_1_id.birth_259D LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.education_927M LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.empl_employedfrom_271D LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.empl_employedtotal_800L LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.empl_industry_691L LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.familystate_447L LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id test_base set up test_join %&gt;% select(table_column, join_id_string) %&gt;% head() table_column join_id_string test_person_1_id.birth_259D LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.education_927M LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.empl_employedfrom_271D LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.empl_employedtotal_800L LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.empl_industry_691L LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.familystate_447L LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id The parts can be strung together for the final query. # create the final train join query # all join TABLE on TABLE train_join_list &lt;- train_join$join_id_string %&gt;% unique() %&gt;% str_c(collapse = &quot; &quot;) # all TABLE.COLUMNS train_table_column_join &lt;- train_join$table_column %&gt;% str_c(collapse = &quot;, &quot;) # full query train_join_query &lt;- train_table_column_join %&gt;% # select train_base columns str_c(&quot;SELECT train_base.*, &quot;,.) %&gt;% # str_c(., &quot; FROM train_base&quot;) %&gt;% # left join table statements str_c(., &quot; &quot;,train_join_list) %&gt;% # save as new table str_c(&quot;CREATE TABLE IF NOT EXISTS train_joined AS &quot;,.) # create the final train join query # all join TABLE on TABLE test_join_list &lt;- test_join$join_id_string %&gt;% unique() %&gt;% str_c(collapse = &quot; &quot;) # all TABLE.COLUMNS test_table_column_join &lt;- test_join$table_column %&gt;% str_c(collapse = &quot;, &quot;) # full query test_join_query &lt;- test_table_column_join %&gt;% # select test_base columns str_c(&quot;SELECT test_base.*, &quot;,.) %&gt;% # str_c(., &quot; FROM test_base&quot;) %&gt;% # left join table statements str_c(., &quot; &quot;,test_join_list) %&gt;% # save as new table str_c(&quot;CREATE TABLE IF NOT EXISTS test_joined AS &quot;,.) train_base join query train_join_query ## [1] &quot;CREATE TABLE IF NOT EXISTS train_joined AS SELECT train_base.*, train_person_1_id.birth_259D, train_person_1_id.education_927M, train_person_1_id.empl_employedfrom_271D, train_person_1_id.empl_employedtotal_800L, train_person_1_id.empl_industry_691L, train_person_1_id.familystate_447L, train_person_1_id.incometype_1044T, train_person_1_id.mainoccupationinc_384A, train_static_cb_0_id.riskassesment_940T FROM train_base LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id LEFT JOIN train_static_cb_0_id ON train_base.case_id = train_static_cb_0_id.case_id&quot; test_base join query test_join_query ## [1] &quot;CREATE TABLE IF NOT EXISTS test_joined AS SELECT test_base.*, test_person_1_id.birth_259D, test_person_1_id.education_927M, test_person_1_id.empl_employedfrom_271D, test_person_1_id.empl_employedtotal_800L, test_person_1_id.empl_industry_691L, test_person_1_id.familystate_447L, test_person_1_id.incometype_1044T, test_person_1_id.mainoccupationinc_384A, test_static_cb_0_id.riskassesment_940T FROM test_base LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id LEFT JOIN test_static_cb_0_id ON test_base.case_id = test_static_cb_0_id.case_id&quot; # join tables with selected features dbExecute(con, test_join_query) dbExecute(con, train_join_query) 0.6 Data analysis Now that we have a dataset with all our relevant features, we can move into data anaysis and prediction. First we need to define our variable types across our test and train data. # read train table train_joined_df &lt;- dbGetQuery(con, &quot;SELECT * FROM train_joined&quot;) %&gt;% tibble() saveRDS(train_joined_df,&quot;train_joined_df.rds&quot;) # read test table test_joined_df &lt;- dbGetQuery(con, &quot;SELECT * FROM test_joined&quot;) %&gt;% tibble() saveRDS(test_joined_df,&quot;test_joined_df.rds&quot;) Import and define variable types train_joined_df&lt;- read_rds(&quot;train_joined_df.rds&quot;) # define train table variables train_joined_tbl &lt;- train_joined_df %&gt;% # convert date to numeric mutate( date_decision = as_date(date_decision), birth_259D = as_date(birth_259D), age = time_length(difftime(date_decision, birth_259D), &quot;years&quot;), month.n = month(date_decision), year.n = year(date_decision), week.n = WEEK_NUM %&gt;% as.numeric()) %&gt;% # label numeric, factors mutate( across(c(matches(&quot;mainoccupationinc_384A|riskassesment_940T| age|\\.n&quot;)), ~ as.numeric(.)), across(c(matches(&quot;education_927M|empl_employedtotal_800L|empl_industry_691L| familystate_447L|incometype_1044T|target|familystate_447L&quot;)), ~ as.factor(.))) test_joined_df&lt;- read_rds(&quot;test_joined_df.rds&quot;) # define test table variables test_joined_tbl &lt;- test_joined_df %&gt;% # convert date to numeric mutate( date_decision = as_date(date_decision), birth_259D = as_date(birth_259D), age = time_length(difftime(date_decision, birth_259D), &quot;years&quot;), month.n = month(date_decision), year.n = year(date_decision), week.n = WEEK_NUM %&gt;% as.numeric()) %&gt;% # label numeric, factors mutate( across(c(matches(&quot;mainoccupationinc_384A|riskassesment_940T| age|\\.n&quot;)), ~ as.numeric(.)), across(c(matches(&quot;education_927M|empl_employedtotal_800L|empl_industry_691L| familystate_447L|incometype_1044T|target|familystate_447L&quot;)), ~ as.factor(.))) train df train_joined_tbl %&gt;% glimpse() ## Rows: 1,526,659 ## Columns: 18 ## $ case_id &lt;int&gt; 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 1… ## $ date_decision &lt;date&gt; 2019-01-03, 2019-01-03, 2019-01-04, 2019-01-03… ## $ MONTH &lt;int&gt; 201901, 201901, 201901, 201901, 201901, 201901,… ## $ WEEK_NUM &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,… ## $ target &lt;fct&gt; 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,… ## $ birth_259D &lt;date&gt; 1986-07-01, 1957-08-01, 1974-12-01, 1993-08-01… ## $ education_927M &lt;fct&gt; P97_36_170, P97_36_170, P97_36_170, P33_146_175… ## $ empl_employedfrom_271D &lt;chr&gt; &quot;2017-09-15&quot;, &quot;2008-10-29&quot;, &quot;2010-02-15&quot;, &quot;2018… ## $ empl_employedtotal_800L &lt;fct&gt; MORE_FIVE, MORE_FIVE, MORE_FIVE, MORE_FIVE, MOR… ## $ empl_industry_691L &lt;fct&gt; OTHER, OTHER, OTHER, OTHER, OTHER, OTHER, EDUCA… ## $ familystate_447L &lt;fct&gt; MARRIED, DIVORCED, MARRIED, MARRIED, MARRIED, M… ## $ incometype_1044T &lt;fct&gt; SALARIED_GOVT, SALARIED_GOVT, EMPLOYED, EMPLOYE… ## $ mainoccupationinc_384A &lt;dbl&gt; 10800, 10000, 14000, 10000, 24000, 64000, 20000… ## $ riskassesment_940T &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,… ## $ age &lt;dbl&gt; 32.50924, 61.42368, 44.09309, 25.42368, 25.0075… ## $ month.n &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,… ## $ year.n &lt;dbl&gt; 2019, 2019, 2019, 2019, 2019, 2019, 2019, 2019,… ## $ week.n &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,… test df test_joined_tbl %&gt;% glimpse() ## Rows: 10 ## Columns: 17 ## $ case_id &lt;int&gt; 57543, 57549, 57551, 57552, 57569, 57630, 57631… ## $ date_decision &lt;date&gt; 2020-10-06, 2020-10-06, 2020-10-06, 2020-10-07… ## $ MONTH &lt;int&gt; 202010, 202010, 202010, 202010, 202010, 202010,… ## $ WEEK_NUM &lt;int&gt; 92, 92, 92, 92, 92, 92, 92, 92, 92, 92 ## $ birth_259D &lt;date&gt; 1996-08-01, 1992-03-01, 1990-08-01, NA, NA, NA,… ## $ education_927M &lt;fct&gt; P97_36_170, P97_36_170, P97_36_170, NA, NA, NA… ## $ empl_employedfrom_271D &lt;chr&gt; &quot;2018-02-15&quot;, &quot;2019-05-04&quot;, &quot;2019-01-15&quot;, NA, N… ## $ empl_employedtotal_800L &lt;fct&gt; MORE_ONE, MORE_ONE, MORE_FIVE, NA, NA, NA, NA, … ## $ empl_industry_691L &lt;fct&gt; OTHER, OTHER, OTHER, NA, NA, NA, NA, NA, NA, NA ## $ familystate_447L &lt;fct&gt; MARRIED, SINGLE, MARRIED, NA, NA, NA, NA, NA, N… ## $ incometype_1044T &lt;fct&gt; EMPLOYED, EMPLOYED, EMPLOYED, NA, NA, NA, NA, N… ## $ mainoccupationinc_384A &lt;dbl&gt; 36000, 15000, 24000, NA, NA, NA, NA, NA, NA, NA ## $ riskassesment_940T &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA ## $ age &lt;dbl&gt; 24.18070, 28.59959, 30.18207, NA, NA, NA, NA, N… ## $ month.n &lt;dbl&gt; 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ## $ year.n &lt;dbl&gt; 2020, 2020, 2020, 2020, 2020, 2020, 2020, 2020,… ## $ week.n &lt;dbl&gt; 92, 92, 92, 92, 92, 92, 92, 92, 92, 92 0.6.1 Summary statistics Here’s a look at some summary statistics. 0.6.2 Nominal variables library(summarytools) # factor level proportions train_joined_tbl %&gt;% select(where(is.factor)) %&gt;% freq() ## Frequencies ## train_joined_tbl$target ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ----------- --------- --------- -------------- --------- -------------- ## 0 1478665 96.86 96.86 96.86 96.86 ## 1 47994 3.14 100.00 3.14 100.00 ## &lt;NA&gt; 0 0.00 100.00 ## Total 1526659 100.00 100.00 100.00 100.00 ## ## train_joined_tbl$education_927M ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ----------------- --------- --------- -------------- --------- -------------- ## a55475b1 798046 52.274 52.274 52.274 52.274 ## P106_81_188 54661 3.580 55.854 3.580 55.854 ## P157_18_172 631 0.041 55.896 0.041 55.896 ## P17_36_170 5481 0.359 56.255 0.359 56.255 ## P33_146_175 258589 16.938 73.193 16.938 73.193 ## P97_36_170 409251 26.807 100.000 26.807 100.000 ## &lt;NA&gt; 0 0.000 100.000 ## Total 1526659 100.000 100.000 100.000 100.000 ## ## train_joined_tbl$empl_employedtotal_800L ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## -------------------- --------- --------- -------------- --------- -------------- ## (Empty string) 998344 65.39 65.39 65.39 65.39 ## LESS_ONE 30467 2.00 67.39 2.00 67.39 ## MORE_FIVE 371321 24.32 91.71 24.32 91.71 ## MORE_ONE 126527 8.29 100.00 8.29 100.00 ## &lt;NA&gt; 0 0.00 100.00 ## Total 1526659 100.00 100.00 100.00 100.00 ## ## train_joined_tbl$empl_industry_691L ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ----------------------- --------- ----------- -------------- ----------- -------------- ## (Empty string) 1004423 65.79223 65.79223 65.79223 65.79223 ## AGRICULTURE 5288 0.34638 66.13861 0.34638 66.13861 ## ARMY_POLICE 14 0.00092 66.13952 0.00092 66.13952 ## ART_MEDIA 245 0.01605 66.15557 0.01605 66.15557 ## CATERING 3508 0.22978 66.38536 0.22978 66.38536 ## CHARITY_RELIGIOUS 25 0.00164 66.38699 0.00164 66.38699 ## EDUCATION 30346 1.98774 68.37473 1.98774 68.37473 ## FINANCE 3150 0.20633 68.58106 0.20633 68.58106 ## GAMING 96 0.00629 68.58735 0.00629 68.58735 ## GOVERNMENT 35440 2.32141 70.90876 2.32141 70.90876 ## HEALTH 13026 0.85324 71.76200 0.85324 71.76200 ## INSURANCE 217 0.01421 71.77621 0.01421 71.77621 ## IT 279 0.01828 71.79449 0.01828 71.79449 ## LAWYER 564 0.03694 71.83143 0.03694 71.83143 ## MANUFACTURING 9035 0.59182 72.42325 0.59182 72.42325 ## MARKETING 239 0.01566 72.43890 0.01566 72.43890 ## MINING 3582 0.23463 72.67353 0.23463 72.67353 ## OTHER 386837 25.33880 98.01233 25.33880 98.01233 ## POST_TELCO 612 0.04009 98.05241 0.04009 98.05241 ## REAL_ESTATE 3680 0.24105 98.29346 0.24105 98.29346 ## RECRUITMENT 85 0.00557 98.29903 0.00557 98.29903 ## TOURISM 513 0.03360 98.33263 0.03360 98.33263 ## TRADE 20696 1.35564 99.68827 1.35564 99.68827 ## TRANSPORTATION 4318 0.28284 99.97111 0.28284 99.97111 ## WELNESS 441 0.02889 100.00000 0.02889 100.00000 ## &lt;NA&gt; 0 0.00000 100.00000 ## Total 1526659 100.00000 100.00000 100.00000 100.00000 ## ## train_joined_tbl$familystate_447L ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ------------------------- --------- --------- -------------- --------- -------------- ## (Empty string) 798046 52.27 52.27 52.27 52.27 ## DIVORCED 19296 1.26 53.54 1.26 53.54 ## LIVING_WITH_PARTNER 8142 0.53 54.07 0.53 54.07 ## MARRIED 484846 31.76 85.83 31.76 85.83 ## SINGLE 183334 12.01 97.84 12.01 97.84 ## WIDOWED 32995 2.16 100.00 2.16 100.00 ## &lt;NA&gt; 0 0.00 100.00 ## Total 1526659 100.00 100.00 100.00 100.00 ## ## train_joined_tbl$incometype_1044T ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ----------------------------- --------- ------------ -------------- ------------ -------------- ## EMPLOYED 298158 19.530098 19.530098 19.530098 19.530098 ## HANDICAPPED 1 0.000066 19.530164 0.000066 19.530164 ## HANDICAPPED_2 7371 0.482819 20.012983 0.482819 20.012983 ## HANDICAPPED_3 5258 0.344412 20.357395 0.344412 20.357395 ## OTHER 11436 0.749087 21.106482 0.749087 21.106482 ## PRIVATE_SECTOR_EMPLOYEE 490562 32.133043 53.239525 32.133043 53.239525 ## RETIRED_PENSIONER 311028 20.373115 73.612640 20.373115 73.612640 ## SALARIED_GOVT 373646 24.474752 98.087392 24.474752 98.087392 ## SELFEMPLOYED 29199 1.912608 100.000000 1.912608 100.000000 ## &lt;NA&gt; 0 0.000000 100.000000 ## Total 1526659 100.000000 100.000000 100.000000 100.000000 0.6.3 Numeric variables # numeric variable summaries train_joined_tbl %&gt;% select(where(is.numeric)) %&gt;% descr() ## Descriptive Statistics ## train_joined_tbl ## N: 1526659 ## ## age case_id mainoccupationinc_384A MONTH month.n ## ----------------- ------------ ------------ ------------------------ ------------ ------------ ## Mean 44.56 1286076.57 57707.48 201936.29 6.43 ## Std.Dev 14.03 718946.59 33348.30 44.74 3.51 ## Min 20.96 0.00 0.00 201901.00 1.00 ## Q1 32.74 766197.00 36000.00 201906.00 3.00 ## Median 42.81 1357358.00 50000.00 201910.00 7.00 ## Q3 56.20 1739023.00 70000.00 202001.00 9.00 ## Max 76.04 2703454.00 200000.00 202010.00 12.00 ## MAD 16.72 721155.91 29652.00 7.41 4.45 ## IQR 23.46 972825.00 34000.00 95.00 6.00 ## CV 0.31 0.56 0.58 0.00 0.55 ## Skewness 0.27 0.14 1.66 0.87 -0.05 ## SE.Skewness 0.00 0.00 0.00 0.00 0.00 ## Kurtosis -1.03 -0.59 3.71 -1.22 -1.23 ## N.Valid 1526659.00 1526659.00 1526659.00 1526659.00 1526659.00 ## Pct.Valid 100.00 100.00 100.00 100.00 100.00 ## ## Table: Table continues below ## ## ## ## riskassesment_940T WEEK_NUM week.n year.n ## ----------------- -------------------- ------------ ------------ ------------ ## Mean 0.23 40.77 40.77 2019.30 ## Std.Dev 0.98 23.80 23.80 0.46 ## Min -3.67 0.00 0.00 2019.00 ## Q1 -0.23 23.00 23.00 2019.00 ## Median 0.37 40.00 40.00 2019.00 ## Q3 0.97 55.00 55.00 2020.00 ## Max 2.12 91.00 91.00 2020.00 ## MAD 0.89 25.20 25.20 0.00 ## IQR 1.20 32.00 32.00 1.00 ## CV 4.32 0.58 0.58 0.00 ## Skewness -0.83 0.30 0.30 0.88 ## SE.Skewness 0.01 0.00 0.00 0.00 ## Kurtosis 0.25 -0.65 -0.65 -1.23 ## N.Valid 53560.00 1526659.00 1526659.00 1526659.00 ## Pct.Valid 3.51 100.00 100.00 100.00 0.6.4 Summary We see that riskassesment_940T has 96.5% missing entries so it may be best to leave it out for now." />
-<link rel="canonical" href="http://localhost:4000/random%20forest/machine%20learning/data%20science/2024/03/08/homecredit-analysis.html" />
-<meta property="og:url" content="http://localhost:4000/random%20forest/machine%20learning/data%20science/2024/03/08/homecredit-analysis.html" />
-<meta property="og:site_name" content="Jason Zheng" />
-<meta property="og:type" content="article" />
-<meta property="article:published_time" content="2024-03-08T00:00:00-08:00" />
-<meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="Home credit part 1: ETL" />
-<script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","dateModified":"2024-03-08T00:00:00-08:00","datePublished":"2024-03-08T00:00:00-08:00","description":"&lt;!DOCTYPE html&gt; Home credit analysis Code Show All Code Hide All Code Home credit analysis Jason 2024-03-08 0.1 Introduction This is primarily an ETL document for the 2024 home credit competition data on Kaggle. This will also be a first attempt at 1) a kaggle competition, 2) approaching this dataset, and 3) documenting the bottom-up process for public review. This will primarily be a reference for myself on how to improve on all these aspects. The goal of this competition is to predict target class from all the provided features. 0.2 Set up 0.2.1 Libraries library(tidyverse) library(here) library(DBI) library(RSQLite) library(reticulate) library(tools) library(data.tree) con &lt;- dbConnect(SQLite(), &quot;mydb&quot;) 0.2.2 File import When I first approached these data, I attempted to read the all the csv files into my R environment through read_csv(). As it turns out, the data contained millions of rows for multiple files and were clearly too big to import for my laptop memory. My roundabout strategy in circumventing this problem was creating a local relational database (SQLite), trim the data down on the database side, and then import a data table that’s hopefully small enough to work with. To do all this, I planned on reading each csv data file into a local database. I’m not a fan of manually writing all my file names so first I set up all the folder paths to read into a local SQLite database. # folder paths train_folder_path &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;train&quot;) %&gt;% str_c(.,&quot;/&quot;) test_folder_path &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;test&quot;) %&gt;% str_c(.,&quot;/&quot;) # file paths train_names &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;train&quot;) %&gt;% list.files() test_names &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;test&quot;) %&gt;% list.files() # test/train full file paths train_paths &lt;- str_c(train_folder_path, train_names) test_paths &lt;- str_c(test_folder_path, test_names) # Names for each data table test_names_noext &lt;- test_names %&gt;% file_path_sans_ext() train_names_noext &lt;- train_names %&gt;% file_path_sans_ext() I then iterated the creation of a database table for each csv by running a dbWriteTable() for each filepath. # Import all csv files into one SQL database # for each csv file in train folder, read into mydb for (i in seq(length(train_paths))){ dbWriteTable(con, train_names_noext[i], train_paths[i], overwrite = TRUE) } # for each csv file in test folder, read into mydb for (i in seq(length(test_paths))){ dbWriteTable(con, test_names_noext[i], test_paths[i], overwrite = TRUE) } 0.3 Overview 0.3.1 SQL overview Since the data is relatively unknown at this point, here are some useful SQL/r functions to extract some useful overviews. We’ll perform these on the train subset of csv files. dbListFields: DBI function to examine column names &quot;PRAGMA table_info&quot;: SQL statement to examine column data type # table fields train_fields &lt;- tibble(table_name = train_names_noext) %&gt;% mutate( fields = map(table_name, ~dbListFields(con, .)), info = map(table_name, ~dbGetQuery(con, str_c(&quot;PRAGMA table_info(&quot;,.,&quot;)&quot;))) ) # show train_fields %&gt;% select(info) %&gt;% unnest(info) %&gt;% head() %&gt;% kable() cid name type notnull dflt_value pk 0 case_id INTEGER 0 NA 0 1 actualdpd_943P REAL 0 NA 0 2 annuity_853A REAL 0 NA 0 3 approvaldate_319D TEXT 0 NA 0 4 byoccupationinc_3656910L REAL 0 NA 0 5 cancelreason_3545846M TEXT 0 NA 0 dbListTables: DBI function to examine existing table names # table names datatables &lt;- dbListTables(con) # original table names original_table_names &lt;- tibble(table = datatables) %&gt;% # filter out future added table names filter(str_detect(table, &quot;test|train&quot;), str_detect(table, &quot;id|ID|_U|joined&quot;, negate = TRUE)) # show original_table_names %&gt;% head() %&gt;% kable() table test_applprev_1_0 test_applprev_1_1 test_applprev_1_2 test_applprev_2 test_base test_credit_bureau_a_1_0 There are 1139 columns across 68 tables. Some recurring columns are case_id, num_group1, and num_group2. case_id is clearly an unique row identifier for each person. Based on the Kaggle data description, num_group1 and num_group2 are meant to index case_id when there are multiple row entries per case_id (e.g. historical loan contracts). 0.3.2 File naming patterns We can also examine the structure of the files with a data.tree below. # set up nodes homecredit&lt;- Node$new(&quot;home-credit-credit-risk-model-stability&quot;) csvfiles &lt;- homecredit$AddChild(&quot;csv_files&quot;) train &lt;- csvfiles$AddChild(&quot;train&quot;) test &lt;- csvfiles$AddChild(&quot;test&quot;) # add train nodes for (i in (original_table_names %&gt;% filter(str_detect(table, &quot;train&quot;)) %&gt;% pull(table))){ train$AddChild(i)} # add test nodes for (i in (original_table_names %&gt;% filter(str_detect(table, &quot;test&quot;)) %&gt;% pull(table))){ test$AddChild(i)} # show homecredit %&gt;% as.data.frame() %&gt;% as.matrix() %&gt;% print(quote=FALSE) ## levelName ## [1,] home-credit-credit-risk-model-stability ## [2,] °--csv_files ## [3,] ¦--train ## [4,] ¦ ¦--train_applprev_1_0 ## [5,] ¦ ¦--train_applprev_1_1 ## [6,] ¦ ¦--train_applprev_2 ## [7,] ¦ ¦--train_base ## [8,] ¦ ¦--train_credit_bureau_a_1_0 ## [9,] ¦ ¦--train_credit_bureau_a_1_1 ## [10,] ¦ ¦--train_credit_bureau_a_1_2 ## [11,] ¦ ¦--train_credit_bureau_a_1_3 ## [12,] ¦ ¦--train_credit_bureau_a_2_0 ## [13,] ¦ ¦--train_credit_bureau_a_2_1 ## [14,] ¦ ¦--train_credit_bureau_a_2_10 ## [15,] ¦ ¦--train_credit_bureau_a_2_2 ## [16,] ¦ ¦--train_credit_bureau_a_2_3 ## [17,] ¦ ¦--train_credit_bureau_a_2_4 ## [18,] ¦ ¦--train_credit_bureau_a_2_5 ## [19,] ¦ ¦--train_credit_bureau_a_2_6 ## [20,] ¦ ¦--train_credit_bureau_a_2_7 ## [21,] ¦ ¦--train_credit_bureau_a_2_8 ## [22,] ¦ ¦--train_credit_bureau_a_2_9 ## [23,] ¦ ¦--train_credit_bureau_b_1 ## [24,] ¦ ¦--train_credit_bureau_b_2 ## [25,] ¦ ¦--train_debitcard_1 ## [26,] ¦ ¦--train_deposit_1 ## [27,] ¦ ¦--train_other_1 ## [28,] ¦ ¦--train_person_1 ## [29,] ¦ ¦--train_person_2 ## [30,] ¦ ¦--train_static_0_0 ## [31,] ¦ ¦--train_static_0_1 ## [32,] ¦ ¦--train_static_cb_0 ## [33,] ¦ ¦--train_tax_registry_a_1 ## [34,] ¦ ¦--train_tax_registry_b_1 ## [35,] ¦ °--train_tax_registry_c_1 ## [36,] °--test ## [37,] ¦--test_applprev_1_0 ## [38,] ¦--test_applprev_1_1 ## [39,] ¦--test_applprev_1_2 ## [40,] ¦--test_applprev_2 ## [41,] ¦--test_base ## [42,] ¦--test_credit_bureau_a_1_0 ## [43,] ¦--test_credit_bureau_a_1_1 ## [44,] ¦--test_credit_bureau_a_1_2 ## [45,] ¦--test_credit_bureau_a_1_3 ## [46,] ¦--test_credit_bureau_a_1_4 ## [47,] ¦--test_credit_bureau_a_2_0 ## [48,] ¦--test_credit_bureau_a_2_1 ## [49,] ¦--test_credit_bureau_a_2_10 ## [50,] ¦--test_credit_bureau_a_2_11 ## [51,] ¦--test_credit_bureau_a_2_2 ## [52,] ¦--test_credit_bureau_a_2_3 ## [53,] ¦--test_credit_bureau_a_2_4 ## [54,] ¦--test_credit_bureau_a_2_5 ## [55,] ¦--test_credit_bureau_a_2_6 ## [56,] ¦--test_credit_bureau_a_2_7 ## [57,] ¦--test_credit_bureau_a_2_8 ## [58,] ¦--test_credit_bureau_a_2_9 ## [59,] ¦--test_credit_bureau_b_1 ## [60,] ¦--test_credit_bureau_b_2 ## [61,] ¦--test_debitcard_1 ## [62,] ¦--test_deposit_1 ## [63,] ¦--test_other_1 ## [64,] ¦--test_person_1 ## [65,] ¦--test_person_2 ## [66,] ¦--test_static_0_0 ## [67,] ¦--test_static_0_1 ## [68,] ¦--test_static_0_2 ## [69,] ¦--test_static_cb_0 ## [70,] ¦--test_tax_registry_a_1 ## [71,] ¦--test_tax_registry_b_1 ## [72,] °--test_tax_registry_c_1 We see that all the original csv files are organized by a prefix test_ or train_. These can be further related by numeral suffixes that denote either 1) related tables split by columns (train_person_1, train_person_2) or 2) related tables split by rows (train_credit_bureau_a_2_1,train_credit_bureau_a_2_2,…,train_credit_bureau_a_2_8). In addition, a feature_definitions.csv file was provided that mapped column names to feature definitions. For future reference, we create a tibble to map feature definitions to column names to table names. # import feature definitions features &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;feature_definitions.csv&quot;) %&gt;% read_csv(show_col_types = FALSE) # table fields mapped to feature description train_features &lt;- train_fields %&gt;% unnest(everything()) %&gt;% left_join(features, by = c(&quot;fields&quot; = &quot;Variable&quot;)) %&gt;% select(fields, everything()) train_features %&gt;% select(fields, table_name,Description ) %&gt;% head() fields table_name Description case_id train_applprev_1_0 NA actualdpd_943P train_applprev_1_0 Days Past Due (DPD) of previous contract (actual). annuity_853A train_applprev_1_0 Monthly annuity for previous applications. approvaldate_319D train_applprev_1_0 Approval Date of Previous Application byoccupationinc_3656910L train_applprev_1_0 Applicant’s income from previous applications. cancelreason_3545846M train_applprev_1_0 Application cancellation reason. 0.3.3 Base_train The goal of this competition is to predict target, which can be found in train_base. The definition of target, found on a forum Q&amp;A, is defined as: ...unpaid payment (one is enough) in certain time period. There is also some time tolerance (e.g. one day late is not default) and amount tolerance (if client paid $100 instead of $100.10) ). Here’s some information on train_base. Column names, type # Base training dataset - summary # table columns base_columns &lt;- dbGetQuery(con, &quot;PRAGMA table_info(train_base)&quot;) base_columns %&gt;% head() cid name type notnull dflt_value pk 0 case_id INTEGER 0 NA 0 1 date_decision TEXT 0 NA 0 2 MONTH INTEGER 0 NA 0 3 WEEK_NUM INTEGER 0 NA 0 4 target INTEGER 0 NA 0 Number of rows # table rows base_rows &lt;- dbGetQuery(con, &quot;SELECT COUNT(*) FROM train_base&quot;) base_rows %&gt;% head() COUNT(*) 1526659 Number of rows per participant # rows per participant base_rows_per_id &lt;- dbGetQuery(con, &quot;SELECT case_id, COUNT(*) FROM train_base GROUP BY case_id&quot;) base_rows_per_id %&gt;% head() case_id COUNT(*) 0 1 1 1 2 1 3 1 4 1 5 1 # sum of rows row_per_users &lt;- dbGetQuery(con, &quot;SELECT row_count, count(*) as user_count FROM (SELECT count(case_id) AS row_count FROM train_base GROUP BY case_id) GROUP BY row_count&quot;) row_per_users %&gt;% head() row_count user_count 1 1526659 Now we have an idea of the main table we’ll be working with. Since the prediction target is only available for the case_id present in train_base, the first step for reducing the data load is to filter for the same case_id in all the other supplemental tables. Before we do that, however, I want to simplify the number of tables I have by joining tables split by rows. This will reduce the number of table LEFT JOINs I will have to perform later on. 0.3.4 Joining split tables The split tables we’re looking for share the same columns but different rows. We want to 1) identify tables sharing the same columns , 2) identify the shared naming scheme that tbese split tables use, and 3) join the split table rows by the common naming scheme. Here are the steps to set this up: Create a tibble with original table names mapped to all column names # renew datatable datatables &lt;- dbListTables(con) # Filter original tables original_fields &lt;- tibble(table = datatables) %&gt;% filter( str_detect(table, &quot;test|train&quot;), str_detect(table, &quot;id|ID|_U|joined&quot;, negate = TRUE) ) %&gt;% mutate( fields = map(table, ~dbListFields(con, .)), info = map(table, ~dbGetQuery(con, str_c(&quot;PRAGMA table_info(&quot;,.,&quot;)&quot;))) ) %&gt;% select(table, fields) %&gt;% unnest(fields) First extract common naming scheme using regex. We then map the naming scheme to original table name and its respective number of columns. We expect that for any set tables sharing a common scheme, the set should share the same number of columns. # map extracted scheme to original table name, # of columns split_datasets_revised &lt;- original_fields %&gt;% select(table) %&gt;% unique() %&gt;% mutate(table_name_extract =str_extract(table,&quot;[A-Za-z_]*_\\\\d(?=_\\\\d)&quot; )) %&gt;% select(table, table_name_extract) %&gt;% mutate( ncol = map(table, ~dbGetQuery(con, str_c(&quot;PRAGMA table_info(&quot;,.,&quot;)&quot;)) %&gt;% nrow()) ) %&gt;% unnest(ncol) split_datasets_revised %&gt;% head() table table_name_extract ncol test_applprev_1_0 test_applprev_1 41 test_applprev_1_1 test_applprev_1 41 test_applprev_1_2 test_applprev_1 41 test_applprev_2 NA 6 test_base NA 4 test_credit_bureau_a_1_0 test_credit_bureau_a_1 79 Set up the join query for split tables. Since these are vertical rowbinding, we use UNION statements to create new joined tables suffxied with _U. # joined table set names split_dataset_names &lt;- split_datasets_revised$table_name_extract %&gt;% unique() %&gt;% na.omit() # create UNION/create table query for every split tables union_query_revised &lt;- # extract unique shared table names split_datasets_revised %&gt;% select(table_name_extract) %&gt;% na.omit() %&gt;% unique() %&gt;% # join to identify split tables left_join(split_datasets_revised,by = join_by(table_name_extract)) %&gt;% # add # of split tables per group group_by(table_name_extract) %&gt;% add_tally() %&gt;% # iterate SELECT statements for SQL query mutate(queries = str_c(&quot;SELECT * FROM &quot;, table)) %&gt;% # create single query for each table select(table_name_extract, queries) %&gt;% group_by(table_name_extract) %&gt;% nest(nested_query = queries) %&gt;% # create combined table mutate( combined_query = nested_query[[1]] %&gt;% pull(queries) %&gt;% paste0(., collapse = &quot; &quot;), union_query = str_replace_all(combined_query,&quot;(\\\\d )(?=SELECT)&quot;,&quot;\\\\1UNION &quot; ), write_query = str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,table_name_extract,&quot;_U&quot;,&quot; AS &quot;, union_query)) # examine the queries union_query_revised %&gt;% select(table_name_extract,write_query) %&gt;% head() table_name_extract write_query test_applprev_1 CREATE TABLE IF NOT EXISTS test_applprev_1_U AS SELECT * FROM test_applprev_1_0 UNION SELECT * FROM test_applprev_1_1 UNION SELECT * FROM test_applprev_1_2 test_credit_bureau_a_1 CREATE TABLE IF NOT EXISTS test_credit_bureau_a_1_U AS SELECT * FROM test_credit_bureau_a_1_0 UNION SELECT * FROM test_credit_bureau_a_1_1 UNION SELECT * FROM test_credit_bureau_a_1_2 UNION SELECT * FROM test_credit_bureau_a_1_3 UNION SELECT * FROM test_credit_bureau_a_1_4 test_credit_bureau_a_2 CREATE TABLE IF NOT EXISTS test_credit_bureau_a_2_U AS SELECT * FROM test_credit_bureau_a_2_0 UNION SELECT * FROM test_credit_bureau_a_2_1 UNION SELECT * FROM test_credit_bureau_a_2_10 UNION SELECT * FROM test_credit_bureau_a_2_11 UNION SELECT * FROM test_credit_bureau_a_2_2 UNION SELECT * FROM test_credit_bureau_a_2_3 UNION SELECT * FROM test_credit_bureau_a_2_4 UNION SELECT * FROM test_credit_bureau_a_2_5 UNION SELECT * FROM test_credit_bureau_a_2_6 UNION SELECT * FROM test_credit_bureau_a_2_7 UNION SELECT * FROM test_credit_bureau_a_2_8 UNION SELECT * FROM test_credit_bureau_a_2_9 test_static_0 CREATE TABLE IF NOT EXISTS test_static_0_U AS SELECT * FROM test_static_0_0 UNION SELECT * FROM test_static_0_1 UNION SELECT * FROM test_static_0_2 train_applprev_1 CREATE TABLE IF NOT EXISTS train_applprev_1_U AS SELECT * FROM train_applprev_1_0 UNION SELECT * FROM train_applprev_1_1 train_credit_bureau_a_1 CREATE TABLE IF NOT EXISTS train_credit_bureau_a_1_U AS SELECT * FROM train_credit_bureau_a_1_0 UNION SELECT * FROM train_credit_bureau_a_1_1 UNION SELECT * FROM train_credit_bureau_a_1_2 UNION SELECT * FROM train_credit_bureau_a_1_3 # SQL - union # execute each query union_query_revised$write_query %&gt;% walk(~dbExecute(con,.)) 0.4 Subset supplemental data Since the main focus of the operation is predicting target from train_base, we can reduce our operations to just data that’s available for case_ids that are present in train_base. This can be done by using INNER JOIN and filtering out data from all supplemental sources with train_base$case_id. First subset case_id column from base tables # create IDs to filter out relevant IDs in data tables dbExecute(con,&quot;CREATE TABLE IF NOT EXISTS train_id AS SELECT case_id FROM train_base&quot;) dbExecute(con,&quot;CREATE TABLE IF NOT EXISTS test_id AS SELECT case_id FROM test_base&quot;) Some of supplemental tables have multiple rows per participant. The key for the main participant data is the value 0 for numgroup_1 and numgroup_2. Here we set up a numgroup tibble for future mapping. (1 = 0 mapping, 0 = other number) # numgroup index numgroup_tibble &lt;- original_fields %&gt;% filter(str_detect(fields, &quot;num_group&quot;)) %&gt;% pivot_wider(names_from = fields, values_from = fields, values_fn = ~1, values_fill = 0) numgroup_tibble %&gt;% head() table num_group1 num_group2 test_applprev_1_0 1 0 test_applprev_1_1 1 0 test_applprev_1_2 1 0 test_applprev_2 1 1 test_credit_bureau_a_1_0 1 0 test_credit_bureau_a_1_1 1 0 Create query to INNER JOIN and filter tables by train_base$case_id, numgroup and save filtered tables with a _id suffix. # renew data table datatables &lt;- dbListTables(con) # filter data by id id_join_query_revised &lt;- tibble(tables = datatables) %&gt;% # filter for original tables,joined tables filter( # filter out split table names str_detect(tables,str_c(str_c(split_dataset_names,&quot;_\\\\d&quot;), collapse = &quot;|&quot;), negate = TRUE))%&gt;% filter(str_detect(tables, &quot;id|ID|joined|base&quot;, negate = TRUE)) %&gt;% filter(str_detect(tables, &quot;train|test&quot;)) %&gt;% # create query mutate( query = case_when( str_detect(tables, &quot;train&quot;) ~ str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,tables, &quot;_id&quot;,&quot; AS SELECT * FROM &quot;,tables, &quot; INNER JOIN train_id ON &quot;, tables), str_detect(tables, &quot;test&quot;) ~ str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,tables, &quot;_id&quot;,&quot; AS SELECT * FROM &quot;,tables, &quot; INNER JOIN test_id ON &quot;, tables) ), query = case_when( str_detect(tables, &quot;train&quot;) ~ str_c(query, &quot;.case_id = train_id.case_id&quot;), str_detect(tables, &quot;test&quot;) ~ str_c(query, &quot;.case_id = test_id.case_id&quot;) ) ) # filter rows by num_group id_join_query_num &lt;- id_join_query_revised %&gt;% left_join(numgroup_tibble , by = c(&quot;tables&quot; = &quot;table&quot;)) %&gt;% mutate( query = case_when( num_group1 == 1 &amp; num_group2 == 0 ~ str_c(query, &quot; AND num_group1 = 0&quot;), num_group1 == 1 &amp; num_group2 == 1 ~ str_c(query, &quot; AND num_group1 = 0 AND num_group2 = 0&quot;), .default = query ) ) # show queries id_join_query_num$query %&gt;% head() ## [1] &quot;CREATE TABLE IF NOT EXISTS test_applprev_1_U_id AS SELECT * FROM test_applprev_1_U INNER JOIN test_id ON test_applprev_1_U.case_id = test_id.case_id&quot; ## [2] &quot;CREATE TABLE IF NOT EXISTS test_applprev_2_id AS SELECT * FROM test_applprev_2 INNER JOIN test_id ON test_applprev_2.case_id = test_id.case_id AND num_group1 = 0 AND num_group2 = 0&quot; ## [3] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_a_1_U_id AS SELECT * FROM test_credit_bureau_a_1_U INNER JOIN test_id ON test_credit_bureau_a_1_U.case_id = test_id.case_id&quot; ## [4] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_a_2_U_id AS SELECT * FROM test_credit_bureau_a_2_U INNER JOIN test_id ON test_credit_bureau_a_2_U.case_id = test_id.case_id&quot; ## [5] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_b_1_id AS SELECT * FROM test_credit_bureau_b_1 INNER JOIN test_id ON test_credit_bureau_b_1.case_id = test_id.case_id AND num_group1 = 0&quot; ## [6] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_b_2_id AS SELECT * FROM test_credit_bureau_b_2 INNER JOIN test_id ON test_credit_bureau_b_2.case_id = test_id.case_id AND num_group1 = 0 AND num_group2 = 0&quot; # execute id_join_query_num$query %&gt;% walk(~dbExecute(con,.)) 0.5 Joining features 0.5.1 Feature subset To facilitate a quick analysis we’re going to pick out some variables that I think are theoretically relevant in predicting target: birth_259D: Birth date education_927M: Education empl_employedfrom_271D: Employment date empl_employedtotal_800L: Employment length empl_industry_691L: Job industry familystate_447L: Family status incometype_1044TL: Salary type mainoccupationinc_384A: Income amount riskassesment_940T: Normalized risk - assessed by credit bureau 0.5.2 Join SQL We can use a tibble to map the selected features to their respective tables. # highlight features of interest and identify within datatables # pick features of interest and rename revised_feature_list &lt;- list( base = c(&quot;case_id&quot;), person_1_id = c(&quot;birth_259D&quot;, #birthdate &quot;education_927M&quot;, # education &quot;empl_employedfrom_271D&quot;, # employ date &quot;empl_employedtotal_800L&quot;, # employ length &quot;empl_industry_691L&quot;, # job industry &quot;familystate_447L&quot;, # relationship &quot;incometype_1044T&quot;, # salary type &quot;mainoccupationinc_384A&quot;# income amount ), static_cb_0_id = c(&quot;riskassesment_940T&quot; #risk assessment - normalized )) # link features of interest to data tables revised_features_tbl &lt;- # set up variables as tibble tibble(table = names(revised_feature_list), train_table = str_c(&quot;train_&quot;, table), test_table = str_c(&quot;test_&quot;, table), features = revised_feature_list ) %&gt;% unnest(features) We’ll then set up the query parts using the mapped tibble. # create query for joining relevant features to train_base train_join &lt;- revised_features_tbl %&gt;% filter(str_detect(features, &quot;case_id&quot;, negate = TRUE)) %&gt;% na.omit() %&gt;% # table.column query mutate( table_column = str_c(train_table,&quot;.&quot;, features)) %&gt;% select(train_table, table_column) %&gt;% mutate( join_string = str_c(&quot;LEFT JOIN &quot;, train_table, &quot; ON &quot;), id_string = str_c(&quot;train_base.case_id = &quot;,train_table, &quot;.case_id&quot;), join_id_string = str_c(join_string, id_string) ) %&gt;% unique() # create query for joining relevant features to train_test test_join &lt;- revised_features_tbl %&gt;% filter(str_detect(features, &quot;case_id&quot;, negate = TRUE)) %&gt;% na.omit() %&gt;% # table.column query mutate( table_column = str_c(test_table,&quot;.&quot;, features)) %&gt;% select(test_table, table_column) %&gt;% mutate( join_string = str_c(&quot;LEFT JOIN &quot;, test_table, &quot; ON &quot;), id_string = str_c(&quot;test_base.case_id = &quot;,test_table, &quot;.case_id&quot;), join_id_string = str_c(join_string, id_string) ) %&gt;% unique() train_base set up train_join %&gt;% select(table_column, join_id_string) %&gt;% head() table_column join_id_string train_person_1_id.birth_259D LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.education_927M LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.empl_employedfrom_271D LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.empl_employedtotal_800L LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.empl_industry_691L LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id train_person_1_id.familystate_447L LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id test_base set up test_join %&gt;% select(table_column, join_id_string) %&gt;% head() table_column join_id_string test_person_1_id.birth_259D LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.education_927M LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.empl_employedfrom_271D LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.empl_employedtotal_800L LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.empl_industry_691L LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id test_person_1_id.familystate_447L LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id The parts can be strung together for the final query. # create the final train join query # all join TABLE on TABLE train_join_list &lt;- train_join$join_id_string %&gt;% unique() %&gt;% str_c(collapse = &quot; &quot;) # all TABLE.COLUMNS train_table_column_join &lt;- train_join$table_column %&gt;% str_c(collapse = &quot;, &quot;) # full query train_join_query &lt;- train_table_column_join %&gt;% # select train_base columns str_c(&quot;SELECT train_base.*, &quot;,.) %&gt;% # str_c(., &quot; FROM train_base&quot;) %&gt;% # left join table statements str_c(., &quot; &quot;,train_join_list) %&gt;% # save as new table str_c(&quot;CREATE TABLE IF NOT EXISTS train_joined AS &quot;,.) # create the final train join query # all join TABLE on TABLE test_join_list &lt;- test_join$join_id_string %&gt;% unique() %&gt;% str_c(collapse = &quot; &quot;) # all TABLE.COLUMNS test_table_column_join &lt;- test_join$table_column %&gt;% str_c(collapse = &quot;, &quot;) # full query test_join_query &lt;- test_table_column_join %&gt;% # select test_base columns str_c(&quot;SELECT test_base.*, &quot;,.) %&gt;% # str_c(., &quot; FROM test_base&quot;) %&gt;% # left join table statements str_c(., &quot; &quot;,test_join_list) %&gt;% # save as new table str_c(&quot;CREATE TABLE IF NOT EXISTS test_joined AS &quot;,.) train_base join query train_join_query ## [1] &quot;CREATE TABLE IF NOT EXISTS train_joined AS SELECT train_base.*, train_person_1_id.birth_259D, train_person_1_id.education_927M, train_person_1_id.empl_employedfrom_271D, train_person_1_id.empl_employedtotal_800L, train_person_1_id.empl_industry_691L, train_person_1_id.familystate_447L, train_person_1_id.incometype_1044T, train_person_1_id.mainoccupationinc_384A, train_static_cb_0_id.riskassesment_940T FROM train_base LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id LEFT JOIN train_static_cb_0_id ON train_base.case_id = train_static_cb_0_id.case_id&quot; test_base join query test_join_query ## [1] &quot;CREATE TABLE IF NOT EXISTS test_joined AS SELECT test_base.*, test_person_1_id.birth_259D, test_person_1_id.education_927M, test_person_1_id.empl_employedfrom_271D, test_person_1_id.empl_employedtotal_800L, test_person_1_id.empl_industry_691L, test_person_1_id.familystate_447L, test_person_1_id.incometype_1044T, test_person_1_id.mainoccupationinc_384A, test_static_cb_0_id.riskassesment_940T FROM test_base LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id LEFT JOIN test_static_cb_0_id ON test_base.case_id = test_static_cb_0_id.case_id&quot; # join tables with selected features dbExecute(con, test_join_query) dbExecute(con, train_join_query) 0.6 Data analysis Now that we have a dataset with all our relevant features, we can move into data anaysis and prediction. First we need to define our variable types across our test and train data. # read train table train_joined_df &lt;- dbGetQuery(con, &quot;SELECT * FROM train_joined&quot;) %&gt;% tibble() saveRDS(train_joined_df,&quot;train_joined_df.rds&quot;) # read test table test_joined_df &lt;- dbGetQuery(con, &quot;SELECT * FROM test_joined&quot;) %&gt;% tibble() saveRDS(test_joined_df,&quot;test_joined_df.rds&quot;) Import and define variable types train_joined_df&lt;- read_rds(&quot;train_joined_df.rds&quot;) # define train table variables train_joined_tbl &lt;- train_joined_df %&gt;% # convert date to numeric mutate( date_decision = as_date(date_decision), birth_259D = as_date(birth_259D), age = time_length(difftime(date_decision, birth_259D), &quot;years&quot;), month.n = month(date_decision), year.n = year(date_decision), week.n = WEEK_NUM %&gt;% as.numeric()) %&gt;% # label numeric, factors mutate( across(c(matches(&quot;mainoccupationinc_384A|riskassesment_940T| age|\\\\.n&quot;)), ~ as.numeric(.)), across(c(matches(&quot;education_927M|empl_employedtotal_800L|empl_industry_691L| familystate_447L|incometype_1044T|target|familystate_447L&quot;)), ~ as.factor(.))) test_joined_df&lt;- read_rds(&quot;test_joined_df.rds&quot;) # define test table variables test_joined_tbl &lt;- test_joined_df %&gt;% # convert date to numeric mutate( date_decision = as_date(date_decision), birth_259D = as_date(birth_259D), age = time_length(difftime(date_decision, birth_259D), &quot;years&quot;), month.n = month(date_decision), year.n = year(date_decision), week.n = WEEK_NUM %&gt;% as.numeric()) %&gt;% # label numeric, factors mutate( across(c(matches(&quot;mainoccupationinc_384A|riskassesment_940T| age|\\\\.n&quot;)), ~ as.numeric(.)), across(c(matches(&quot;education_927M|empl_employedtotal_800L|empl_industry_691L| familystate_447L|incometype_1044T|target|familystate_447L&quot;)), ~ as.factor(.))) train df train_joined_tbl %&gt;% glimpse() ## Rows: 1,526,659 ## Columns: 18 ## $ case_id &lt;int&gt; 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 1… ## $ date_decision &lt;date&gt; 2019-01-03, 2019-01-03, 2019-01-04, 2019-01-03… ## $ MONTH &lt;int&gt; 201901, 201901, 201901, 201901, 201901, 201901,… ## $ WEEK_NUM &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,… ## $ target &lt;fct&gt; 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,… ## $ birth_259D &lt;date&gt; 1986-07-01, 1957-08-01, 1974-12-01, 1993-08-01… ## $ education_927M &lt;fct&gt; P97_36_170, P97_36_170, P97_36_170, P33_146_175… ## $ empl_employedfrom_271D &lt;chr&gt; &quot;2017-09-15&quot;, &quot;2008-10-29&quot;, &quot;2010-02-15&quot;, &quot;2018… ## $ empl_employedtotal_800L &lt;fct&gt; MORE_FIVE, MORE_FIVE, MORE_FIVE, MORE_FIVE, MOR… ## $ empl_industry_691L &lt;fct&gt; OTHER, OTHER, OTHER, OTHER, OTHER, OTHER, EDUCA… ## $ familystate_447L &lt;fct&gt; MARRIED, DIVORCED, MARRIED, MARRIED, MARRIED, M… ## $ incometype_1044T &lt;fct&gt; SALARIED_GOVT, SALARIED_GOVT, EMPLOYED, EMPLOYE… ## $ mainoccupationinc_384A &lt;dbl&gt; 10800, 10000, 14000, 10000, 24000, 64000, 20000… ## $ riskassesment_940T &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,… ## $ age &lt;dbl&gt; 32.50924, 61.42368, 44.09309, 25.42368, 25.0075… ## $ month.n &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,… ## $ year.n &lt;dbl&gt; 2019, 2019, 2019, 2019, 2019, 2019, 2019, 2019,… ## $ week.n &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,… test df test_joined_tbl %&gt;% glimpse() ## Rows: 10 ## Columns: 17 ## $ case_id &lt;int&gt; 57543, 57549, 57551, 57552, 57569, 57630, 57631… ## $ date_decision &lt;date&gt; 2020-10-06, 2020-10-06, 2020-10-06, 2020-10-07… ## $ MONTH &lt;int&gt; 202010, 202010, 202010, 202010, 202010, 202010,… ## $ WEEK_NUM &lt;int&gt; 92, 92, 92, 92, 92, 92, 92, 92, 92, 92 ## $ birth_259D &lt;date&gt; 1996-08-01, 1992-03-01, 1990-08-01, NA, NA, NA,… ## $ education_927M &lt;fct&gt; P97_36_170, P97_36_170, P97_36_170, NA, NA, NA… ## $ empl_employedfrom_271D &lt;chr&gt; &quot;2018-02-15&quot;, &quot;2019-05-04&quot;, &quot;2019-01-15&quot;, NA, N… ## $ empl_employedtotal_800L &lt;fct&gt; MORE_ONE, MORE_ONE, MORE_FIVE, NA, NA, NA, NA, … ## $ empl_industry_691L &lt;fct&gt; OTHER, OTHER, OTHER, NA, NA, NA, NA, NA, NA, NA ## $ familystate_447L &lt;fct&gt; MARRIED, SINGLE, MARRIED, NA, NA, NA, NA, NA, N… ## $ incometype_1044T &lt;fct&gt; EMPLOYED, EMPLOYED, EMPLOYED, NA, NA, NA, NA, N… ## $ mainoccupationinc_384A &lt;dbl&gt; 36000, 15000, 24000, NA, NA, NA, NA, NA, NA, NA ## $ riskassesment_940T &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA ## $ age &lt;dbl&gt; 24.18070, 28.59959, 30.18207, NA, NA, NA, NA, N… ## $ month.n &lt;dbl&gt; 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 ## $ year.n &lt;dbl&gt; 2020, 2020, 2020, 2020, 2020, 2020, 2020, 2020,… ## $ week.n &lt;dbl&gt; 92, 92, 92, 92, 92, 92, 92, 92, 92, 92 0.6.1 Summary statistics Here’s a look at some summary statistics. 0.6.2 Nominal variables library(summarytools) # factor level proportions train_joined_tbl %&gt;% select(where(is.factor)) %&gt;% freq() ## Frequencies ## train_joined_tbl$target ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ----------- --------- --------- -------------- --------- -------------- ## 0 1478665 96.86 96.86 96.86 96.86 ## 1 47994 3.14 100.00 3.14 100.00 ## &lt;NA&gt; 0 0.00 100.00 ## Total 1526659 100.00 100.00 100.00 100.00 ## ## train_joined_tbl$education_927M ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ----------------- --------- --------- -------------- --------- -------------- ## a55475b1 798046 52.274 52.274 52.274 52.274 ## P106_81_188 54661 3.580 55.854 3.580 55.854 ## P157_18_172 631 0.041 55.896 0.041 55.896 ## P17_36_170 5481 0.359 56.255 0.359 56.255 ## P33_146_175 258589 16.938 73.193 16.938 73.193 ## P97_36_170 409251 26.807 100.000 26.807 100.000 ## &lt;NA&gt; 0 0.000 100.000 ## Total 1526659 100.000 100.000 100.000 100.000 ## ## train_joined_tbl$empl_employedtotal_800L ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## -------------------- --------- --------- -------------- --------- -------------- ## (Empty string) 998344 65.39 65.39 65.39 65.39 ## LESS_ONE 30467 2.00 67.39 2.00 67.39 ## MORE_FIVE 371321 24.32 91.71 24.32 91.71 ## MORE_ONE 126527 8.29 100.00 8.29 100.00 ## &lt;NA&gt; 0 0.00 100.00 ## Total 1526659 100.00 100.00 100.00 100.00 ## ## train_joined_tbl$empl_industry_691L ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ----------------------- --------- ----------- -------------- ----------- -------------- ## (Empty string) 1004423 65.79223 65.79223 65.79223 65.79223 ## AGRICULTURE 5288 0.34638 66.13861 0.34638 66.13861 ## ARMY_POLICE 14 0.00092 66.13952 0.00092 66.13952 ## ART_MEDIA 245 0.01605 66.15557 0.01605 66.15557 ## CATERING 3508 0.22978 66.38536 0.22978 66.38536 ## CHARITY_RELIGIOUS 25 0.00164 66.38699 0.00164 66.38699 ## EDUCATION 30346 1.98774 68.37473 1.98774 68.37473 ## FINANCE 3150 0.20633 68.58106 0.20633 68.58106 ## GAMING 96 0.00629 68.58735 0.00629 68.58735 ## GOVERNMENT 35440 2.32141 70.90876 2.32141 70.90876 ## HEALTH 13026 0.85324 71.76200 0.85324 71.76200 ## INSURANCE 217 0.01421 71.77621 0.01421 71.77621 ## IT 279 0.01828 71.79449 0.01828 71.79449 ## LAWYER 564 0.03694 71.83143 0.03694 71.83143 ## MANUFACTURING 9035 0.59182 72.42325 0.59182 72.42325 ## MARKETING 239 0.01566 72.43890 0.01566 72.43890 ## MINING 3582 0.23463 72.67353 0.23463 72.67353 ## OTHER 386837 25.33880 98.01233 25.33880 98.01233 ## POST_TELCO 612 0.04009 98.05241 0.04009 98.05241 ## REAL_ESTATE 3680 0.24105 98.29346 0.24105 98.29346 ## RECRUITMENT 85 0.00557 98.29903 0.00557 98.29903 ## TOURISM 513 0.03360 98.33263 0.03360 98.33263 ## TRADE 20696 1.35564 99.68827 1.35564 99.68827 ## TRANSPORTATION 4318 0.28284 99.97111 0.28284 99.97111 ## WELNESS 441 0.02889 100.00000 0.02889 100.00000 ## &lt;NA&gt; 0 0.00000 100.00000 ## Total 1526659 100.00000 100.00000 100.00000 100.00000 ## ## train_joined_tbl$familystate_447L ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ------------------------- --------- --------- -------------- --------- -------------- ## (Empty string) 798046 52.27 52.27 52.27 52.27 ## DIVORCED 19296 1.26 53.54 1.26 53.54 ## LIVING_WITH_PARTNER 8142 0.53 54.07 0.53 54.07 ## MARRIED 484846 31.76 85.83 31.76 85.83 ## SINGLE 183334 12.01 97.84 12.01 97.84 ## WIDOWED 32995 2.16 100.00 2.16 100.00 ## &lt;NA&gt; 0 0.00 100.00 ## Total 1526659 100.00 100.00 100.00 100.00 ## ## train_joined_tbl$incometype_1044T ## Type: Factor ## ## Freq % Valid % Valid Cum. % Total % Total Cum. ## ----------------------------- --------- ------------ -------------- ------------ -------------- ## EMPLOYED 298158 19.530098 19.530098 19.530098 19.530098 ## HANDICAPPED 1 0.000066 19.530164 0.000066 19.530164 ## HANDICAPPED_2 7371 0.482819 20.012983 0.482819 20.012983 ## HANDICAPPED_3 5258 0.344412 20.357395 0.344412 20.357395 ## OTHER 11436 0.749087 21.106482 0.749087 21.106482 ## PRIVATE_SECTOR_EMPLOYEE 490562 32.133043 53.239525 32.133043 53.239525 ## RETIRED_PENSIONER 311028 20.373115 73.612640 20.373115 73.612640 ## SALARIED_GOVT 373646 24.474752 98.087392 24.474752 98.087392 ## SELFEMPLOYED 29199 1.912608 100.000000 1.912608 100.000000 ## &lt;NA&gt; 0 0.000000 100.000000 ## Total 1526659 100.000000 100.000000 100.000000 100.000000 0.6.3 Numeric variables # numeric variable summaries train_joined_tbl %&gt;% select(where(is.numeric)) %&gt;% descr() ## Descriptive Statistics ## train_joined_tbl ## N: 1526659 ## ## age case_id mainoccupationinc_384A MONTH month.n ## ----------------- ------------ ------------ ------------------------ ------------ ------------ ## Mean 44.56 1286076.57 57707.48 201936.29 6.43 ## Std.Dev 14.03 718946.59 33348.30 44.74 3.51 ## Min 20.96 0.00 0.00 201901.00 1.00 ## Q1 32.74 766197.00 36000.00 201906.00 3.00 ## Median 42.81 1357358.00 50000.00 201910.00 7.00 ## Q3 56.20 1739023.00 70000.00 202001.00 9.00 ## Max 76.04 2703454.00 200000.00 202010.00 12.00 ## MAD 16.72 721155.91 29652.00 7.41 4.45 ## IQR 23.46 972825.00 34000.00 95.00 6.00 ## CV 0.31 0.56 0.58 0.00 0.55 ## Skewness 0.27 0.14 1.66 0.87 -0.05 ## SE.Skewness 0.00 0.00 0.00 0.00 0.00 ## Kurtosis -1.03 -0.59 3.71 -1.22 -1.23 ## N.Valid 1526659.00 1526659.00 1526659.00 1526659.00 1526659.00 ## Pct.Valid 100.00 100.00 100.00 100.00 100.00 ## ## Table: Table continues below ## ## ## ## riskassesment_940T WEEK_NUM week.n year.n ## ----------------- -------------------- ------------ ------------ ------------ ## Mean 0.23 40.77 40.77 2019.30 ## Std.Dev 0.98 23.80 23.80 0.46 ## Min -3.67 0.00 0.00 2019.00 ## Q1 -0.23 23.00 23.00 2019.00 ## Median 0.37 40.00 40.00 2019.00 ## Q3 0.97 55.00 55.00 2020.00 ## Max 2.12 91.00 91.00 2020.00 ## MAD 0.89 25.20 25.20 0.00 ## IQR 1.20 32.00 32.00 1.00 ## CV 4.32 0.58 0.58 0.00 ## Skewness -0.83 0.30 0.30 0.88 ## SE.Skewness 0.01 0.00 0.00 0.00 ## Kurtosis 0.25 -0.65 -0.65 -1.23 ## N.Valid 53560.00 1526659.00 1526659.00 1526659.00 ## Pct.Valid 3.51 100.00 100.00 100.00 0.6.4 Summary We see that riskassesment_940T has 96.5% missing entries so it may be best to leave it out for now.","headline":"Home credit part 1: ETL","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/random%20forest/machine%20learning/data%20science/2024/03/08/homecredit-analysis.html"},"publisher":{"@type":"Organization","logo":{"@type":"ImageObject","url":"http://localhost:4000/assets/img/headshot_circle.png"}},"url":"http://localhost:4000/random%20forest/machine%20learning/data%20science/2024/03/08/homecredit-analysis.html"}</script>
-<!-- End Jekyll SEO tag -->
-
-  <link rel="stylesheet" href="/assets/main.css">
-  <link type="application/atom+xml" rel="alternate" href="http://localhost:4000/feed.xml" title="Jason Zheng" />
-  
-  
-<link rel="apple-touch-icon" sizes="180x180" href="/assets/img/apple-touch-icon.png" | relative_url>
-<link rel="icon" type="image/png" sizes="32x32" href="/assets/img/favicon-32x32.png" | relative_url>
-<link rel="icon" type="image/png" sizes="16x16" href="/assets/img/favicon-16x16.png" | relative_url>
-<body><header class="site-header" role="banner">
-  <div class="wrapper">
-    
-    
-    <a class="site-title" rel="author" href="/">
-      <img src="/assets/img/favicon-32x32.png" />
-      Jason Zheng
-    </a>
-
-    
-      <nav class="site-nav">
-        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
-        <label for="nav-trigger">
-          <span class="menu-icon">
-            <svg viewBox="0 0 18 15" width="18px" height="15px">
-              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
-            </svg>
-          </span>
-        </label>
-
-        <div class="trigger">
-          
-            
-            
-            <a class="page-link" href="/about.html">About</a>
-            
-          
-            
-            
-            <a class="page-link" href="/">Welcome</a>
-            
-          
-            
-            
-          
-            
-            
-          
-            
-            
-            <a class="page-link" href="/projects/">Projects</a>
-            
-          
-            
-            
-          
-            
-            
-          
-        </div>
-      </nav>
-    
-  </div>
-</header>
-<p>&lt;!DOCTYPE html&gt;</p>
-
 <html>
 
 <head>
@@ -98,7 +13,7 @@
 
 <meta name="date" content="2024-03-08" />
 
-<title>Home credit analysis</title>
+<title>Home credit part 2 - Analysis</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1670,1707 +1585,650 @@ font-size: 0.95em;
 
 
 
-<h1 class="title toc-ignore">Home credit analysis</h1>
+<h1 class="title toc-ignore">Home credit part 2 - Analysis</h1>
 <h4 class="author">Jason</h4>
 <h4 class="date">2024-03-08</h4>
 
 </div>
 
 
-<div id="introduction" class="section level2" number="0.1">
-<h2><span class="header-section-number">0.1</span> Introduction</h2>
-<p>This is primarily an ETL document for the 2024 home credit
-competition data on Kaggle. This will also be a first attempt at 1) a
-kaggle competition, 2) approaching this dataset, and 3) documenting the
-bottom-up process for public review. This will primarily be a reference
-for myself on how to improve on all these aspects. The goal of this
-competition is to predict <code>target</code> class from all the
-provided features.</p>
-</div>
-<div id="set-up" class="section level2" number="0.2">
-<h2><span class="header-section-number">0.2</span> Set up</h2>
-<div id="libraries" class="section level3" number="0.2.1">
-<h3><span class="header-section-number">0.2.1</span> Libraries</h3>
+<div id="introduction" class="section level1" number="1">
+<h1><span class="header-section-number">1</span> Introduction</h1>
+<p>Now that we have our data set up we can continue on analysis and
+model training.</p>
+<div id="set-up" class="section level2" number="1.1">
+<h2><span class="header-section-number">1.1</span> Set up</h2>
+<div id="libraries" class="section level3" number="1.1.1">
+<h3><span class="header-section-number">1.1.1</span> Libraries</h3>
 <pre class="r"><code>library(tidyverse)
 library(here)
-library(DBI)
-library(RSQLite)
-library(reticulate)
 library(tools)
-library(data.tree)
-
-con &lt;- dbConnect(SQLite(), &quot;mydb&quot;)</code></pre>
+library(tidymodels)
+library(doParallel)
+library(h2o)</code></pre>
 </div>
-<div id="file-import" class="section level3" number="0.2.2">
-<h3><span class="header-section-number">0.2.2</span> File import</h3>
-<p>When I first approached these data, I attempted to read the all the
-csv files into my R environment through <code>read_csv()</code>. As it
-turns out, the data contained millions of rows for multiple files and
-were clearly too big to import for my laptop memory. My roundabout
-strategy in circumventing this problem was creating a local relational
-database (SQLite), trim the data down on the database side, and then
-import a data table that’s hopefully small enough to work with.</p>
-<p>To do all this, I planned on reading each csv data file into a local
-database. I’m not a fan of manually writing all my file names so first I
-set up all the folder paths to read into a local SQLite database.</p>
-<pre class="r fold-show"><code># folder paths
-train_folder_path &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;train&quot;) %&gt;% str_c(.,&quot;/&quot;) 
-test_folder_path &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;test&quot;) %&gt;% str_c(.,&quot;/&quot;) 
-
-# file paths
-train_names &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;train&quot;) %&gt;% list.files()
-test_names &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;csv_files&quot;,&quot;test&quot;) %&gt;% list.files()
-
-# test/train full file paths
-train_paths &lt;- str_c(train_folder_path, train_names)
-test_paths &lt;- str_c(test_folder_path, test_names)
-
-# Names for each data table
-test_names_noext &lt;- test_names %&gt;% file_path_sans_ext()
-train_names_noext &lt;- train_names %&gt;% file_path_sans_ext()</code></pre>
-<p>I then iterated the creation of a database table for each csv by
-running a <code>dbWriteTable()</code> for each filepath.</p>
-<pre class="r fold-show"><code># Import all csv files into one SQL database
-
-# for each csv file in train folder, read into mydb
-for (i in seq(length(train_paths))){
-  dbWriteTable(con, train_names_noext[i], train_paths[i], overwrite = TRUE)
-}
-
-# for each csv file in test folder, read into mydb
-for (i in seq(length(test_paths))){
-  dbWriteTable(con, test_names_noext[i], test_paths[i], overwrite = TRUE)
-}</code></pre>
+<div id="import-data" class="section level3" number="1.1.2">
+<h3><span class="header-section-number">1.1.2</span> Import data</h3>
+<pre class="r"><code>rdsread(&quot;train_joined_tbl&quot;)
+rdsread(&quot;test_joined_tbl&quot;)</code></pre>
 </div>
 </div>
-<div id="overview" class="section level2" number="0.3">
-<h2><span class="header-section-number">0.3</span> Overview</h2>
-<div id="sql-overview" class="section level3" number="0.3.1">
-<h3><span class="header-section-number">0.3.1</span> SQL overview</h3>
-<p>Since the data is relatively unknown at this point, here are some
-useful SQL/r functions to extract some useful overviews. We’ll perform
-these on the <code>train</code> subset of csv files.</p>
-<ul>
-<li><code>dbListFields</code>: DBI function to examine column names</li>
-<li><code>&quot;PRAGMA table_info&quot;</code>: SQL statement to examine column
-data type</li>
-</ul>
-<pre class="r"><code># table fields
-train_fields &lt;- tibble(table_name = train_names_noext) %&gt;% mutate(
-  fields = map(table_name, ~dbListFields(con, .)),
-  info = map(table_name, ~dbGetQuery(con, str_c(&quot;PRAGMA table_info(&quot;,.,&quot;)&quot;)))
+<div id="training-data" class="section level2" number="1.2">
+<h2><span class="header-section-number">1.2</span> Training data</h2>
+<p>Set up training dataframes.</p>
+<pre class="r"><code>library(rsample)
+
+variables &lt;- c(&#39;year.n&#39;,&#39;month.n&#39;,&#39;week.n&#39;,&#39;education_927M&#39;,&#39;age&#39;,&#39;empl_industry_691L&#39;, &#39;familystate_447L&#39;, &#39;incometype_1044T&#39;,&#39;mainoccupationinc_384A&#39;,&#39;target&#39;)
+predictors &lt;- variables[variables != &quot;target&quot;]
+
+home_train &lt;- train_joined_tbl %&gt;% select(all_of(variables))
+home_test &lt;- test_joined_tbl %&gt;% select(all_of(predictors ))</code></pre>
+</div>
+<div id="random-forest-classifier" class="section level2" number="1.3">
+<h2><span class="header-section-number">1.3</span> Random Forest
+Classifier</h2>
+<div id="model-tuning-using-h2o-randomgrid" class="section level3" number="1.3.1">
+<h3><span class="header-section-number">1.3.1</span> Model tuning using
+h2o randomgrid</h3>
+<p>Set up a hyperparameter grid to find optimal settings for a
+randomforest classifier.</p>
+<pre class="r"><code>library(h2o)
+# convert training data to h2o object
+h2o.no_progress()
+h2o.init(max_mem_size = &quot;5g&quot;)
+
+# set the response column 
+train_h2o &lt;- as.h2o(home_train)
+response &lt;- &quot;target&quot;
+
+# number of features
+n_features &lt;- length(setdiff(names(home_train), &quot;target&quot;))
+
+# set the predictor names
+predictors &lt;- setdiff(colnames(home_train), response)
+
+h2o_rf1 &lt;- h2o.randomForest(
+    x = predictors, 
+    y = response,
+    training_frame = train_h2o, 
+    ntrees = n_features * 10,
+    seed = 123
 )
-# show
-train_fields %&gt;% select(info) %&gt;% unnest(info) %&gt;% head() %&gt;%  kable()</code></pre>
-<table>
-<thead>
-<tr>
-<th style="text-align:right;">
-cid
-</th>
-<th style="text-align:left;">
-name
-</th>
-<th style="text-align:left;">
-type
-</th>
-<th style="text-align:right;">
-notnull
-</th>
-<th style="text-align:left;">
-dflt_value
-</th>
-<th style="text-align:right;">
-pk
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:left;">
-case_id
-</td>
-<td style="text-align:left;">
-INTEGER
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:left;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:left;">
-actualdpd_943P
-</td>
-<td style="text-align:left;">
-REAL
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:left;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-2
-</td>
-<td style="text-align:left;">
-annuity_853A
-</td>
-<td style="text-align:left;">
-REAL
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:left;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-3
-</td>
-<td style="text-align:left;">
-approvaldate_319D
-</td>
-<td style="text-align:left;">
-TEXT
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:left;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-4
-</td>
-<td style="text-align:left;">
-byoccupationinc_3656910L
-</td>
-<td style="text-align:left;">
-REAL
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:left;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-5
-</td>
-<td style="text-align:left;">
-cancelreason_3545846M
-</td>
-<td style="text-align:left;">
-TEXT
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:left;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li><code>dbListTables</code>: DBI function to examine existing table
-names</li>
-</ul>
-<pre class="r"><code># table names
-datatables &lt;- dbListTables(con)
-# original table names
-original_table_names &lt;- tibble(table = datatables) %&gt;%  
-  # filter out future added table names
-  filter(str_detect(table, &quot;test|train&quot;),
-  str_detect(table, &quot;id|ID|_U|joined&quot;, negate = TRUE)) 
-# show
-original_table_names %&gt;% head() %&gt;%  kable()</code></pre>
-<table>
-<thead>
-<tr>
-<th style="text-align:left;">
-table
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-test_applprev_1_0
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_applprev_1_1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_applprev_1_2
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_applprev_2
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_base
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_credit_bureau_a_1_0
-</td>
-</tr>
-</tbody>
-</table>
-<p>There are 1139 columns across 68 tables. Some recurring columns are
-<code>case_id</code>, <code>num_group1</code>, and
-<code>num_group2</code>. <code>case_id</code> is clearly an unique row
-identifier for each person. Based on the Kaggle data description,
-<code>num_group1</code> and <code>num_group2</code> are meant to index
-<code>case_id</code> when there are multiple row entries per
-<code>case_id</code> (e.g. historical loan contracts).</p>
+saveRDS(h2o_rf1,&quot;h2o_rf1.rds&quot;)
+# hyperparameter grid
+hyper_grid &lt;- list(
+  mtries = floor(n_features * c(.05, .15, .25, .333, .4)),
+  min_rows = c(1, 3, 5, 10),
+  max_depth = c(10, 20, 30),
+  sample_rate = c(.55, .632, .70, .80)
+)
+
+# random grid search strategy
+search_criteria &lt;- list(
+  strategy = &quot;RandomDiscrete&quot;,
+  stopping_metric = &quot;mse&quot;,
+  stopping_tolerance = 0.001,   # stop if improvement is &lt; 0.1%
+  stopping_rounds = 10,         # over the last 10 models
+  max_runtime_secs = 60*5      # or stop search after 5 min.
+)
+h2o.shutdown(prompt = FALSE)
+# h2o setup
+h2o.no_progress()
+h2o.init(max_mem_size = &quot;5g&quot;)
+train_h2o &lt;- as.h2o(home_train)
+
+ # perform grid search
+random_grid &lt;- h2o.grid(
+  algorithm = &quot;randomForest&quot;,
+  grid_id = &quot;rf_random_grid&quot;,
+  x = predictors, 
+  y = response, 
+  training_frame = train_h2o,
+  hyper_params = hyper_grid,
+  ntrees = n_features * 10,
+  seed = 123,
+  stopping_metric = &quot;RMSE&quot;,   
+  stopping_rounds = 10,           # stop if last 10 trees added 
+  stopping_tolerance = 0.005,     # don&#39;t improve RMSE by 0.5%
+  search_criteria = search_criteria
+)
+saveRDS(random_grid,&quot;random_grid.rds&quot;)
+# Assess hyperparameter configurations
+summary(random_grid, show_stack_traces = TRUE)
+
+random_grid_perf &lt;- h2o.getGrid(
+  grid_id = &quot;rf_random_grid&quot;, 
+  sort_by = &quot;mse&quot;, 
+  decreasing = FALSE
+)
+saveRDS(random_grid_perf,&quot;random_grid_perf.rds&quot;)</code></pre>
+<pre class="r"><code>rdsread(&quot;random_grid&quot;)
+summary(random_grid, show_stack_traces = TRUE)</code></pre>
+<pre><code>## H2O Grid Details
+## ================
+## 
+## Grid ID: rf_random_grid 
+## Used hyper parameters: 
+##   -  max_depth 
+##   -  min_rows 
+##   -  mtries 
+##   -  sample_rate 
+## Number of models: 5 
+## Number of failed models: 1 
+## 
+## Hyper-Parameter Search Summary: ordered by increasing logloss
+## Failed models
+## -------------
+## H2O Grid Summary
+## ================
+## 
+## Grid ID: rf_random_grid 
+## Used hyper parameters: 
+##   -  max_depth 
+##   -  min_rows 
+##   -  mtries 
+##   -  sample_rate 
+## Number of models: 5 
+##   -  rf_random_grid_model_3 
+##   -  rf_random_grid_model_1 
+##   -  rf_random_grid_model_4 
+##   -  rf_random_grid_model_5 
+##   -  rf_random_grid_model_6 
+## 
+## Number of failed models: 1 
+##   -  Illegal argument(s) for DRF model: rf_random_grid_model_2.  Details: ERRR on field: _mtries: mtries must be -1 (converted to sqrt(features)) or -2 (All features) or &gt;= 1 but it is 0
+## ERRR on field: _mtries: Computed mtries should be -1 or -2 or in interval [1,10[ but it is 0
+## water.exceptions.H2OModelBuilderIllegalArgumentException: Illegal argument(s) for DRF model: rf_random_grid_model_2.  Details: ERRR on field: _mtries: mtries must be -1 (converted to sqrt(features)) or -2 (All features) or &gt;= 1 but it is 0
+## ERRR on field: _mtries: Computed mtries should be -1 or -2 or in interval [1,10[ but it is 0
+## 
+##  at water.exceptions.H2OModelBuilderIllegalArgumentException.makeFromBuilder(H2OModelBuilderIllegalArgumentException.java:19)
+##  at hex.tree.SharedTree$Driver.computeImpl(SharedTree.java:236)
+##  at hex.ModelBuilder$Driver.compute2(ModelBuilder.java:253)
+##  at water.H2O$H2OCountedCompleter.compute(H2O.java:1677)
+##  at jsr166y.CountedCompleter.exec(CountedCompleter.java:468)
+##  at jsr166y.ForkJoinTask.doExec(ForkJoinTask.java:263)
+##  at jsr166y.ForkJoinPool$WorkQueue.runTask(ForkJoinPool.java:976)
+##  at jsr166y.ForkJoinPool.runWorker(ForkJoinPool.java:1479)
+##  at jsr166y.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:104)
+## </code></pre>
+<pre class="r"><code>rdsread(&quot;random_grid_perf&quot;)
+random_grid_perf</code></pre>
+<pre><code>## H2O Grid Details
+## ================
+## 
+## Grid ID: rf_random_grid 
+## Used hyper parameters: 
+##   -  max_depth 
+##   -  min_rows 
+##   -  mtries 
+##   -  sample_rate 
+## Number of models: 5 
+## Number of failed models: 1 
+## 
+## Hyper-Parameter Search Summary: ordered by increasing mse
+## Failed models
+## -------------</code></pre>
 </div>
-<div id="file-naming-patterns" class="section level3" number="0.3.2">
-<h3><span class="header-section-number">0.3.2</span> File naming
-patterns</h3>
-<p>We can also examine the structure of the files with a
-<code>data.tree</code> below.</p>
-<pre class="r"><code># set up nodes
-homecredit&lt;- Node$new(&quot;home-credit-credit-risk-model-stability&quot;)
-csvfiles &lt;- homecredit$AddChild(&quot;csv_files&quot;)
-train &lt;- csvfiles$AddChild(&quot;train&quot;)
-test &lt;- csvfiles$AddChild(&quot;test&quot;)
+</div>
+<div id="model-validation" class="section level2" number="1.4">
+<h2><span class="header-section-number">1.4</span> Model validation</h2>
+<div id="preprocessing-setup" class="section level3" number="1.4.1">
+<h3><span class="header-section-number">1.4.1</span> Preprocessing
+setup</h3>
+<p>Set up tidymodels framework to preprocess and use train data
+information.</p>
+<pre class="r"><code>library(recipes)
+library(workflows)
 
-# add train nodes
-for (i in (original_table_names %&gt;% filter(str_detect(table, &quot;train&quot;)) %&gt;% pull(table))){
-  train$AddChild(i)}
-# add test nodes
-for (i in (original_table_names %&gt;% filter(str_detect(table, &quot;test&quot;)) %&gt;% pull(table))){
-  test$AddChild(i)}
-# show
-homecredit %&gt;% 
-  as.data.frame() %&gt;% 
-  as.matrix() %&gt;% 
-  print(quote=FALSE)</code></pre>
-<pre><code>##       levelName                              
-##  [1,] home-credit-credit-risk-model-stability
-##  [2,]  °--csv_files                          
-##  [3,]      ¦--train                          
-##  [4,]      ¦   ¦--train_applprev_1_0         
-##  [5,]      ¦   ¦--train_applprev_1_1         
-##  [6,]      ¦   ¦--train_applprev_2           
-##  [7,]      ¦   ¦--train_base                 
-##  [8,]      ¦   ¦--train_credit_bureau_a_1_0  
-##  [9,]      ¦   ¦--train_credit_bureau_a_1_1  
-## [10,]      ¦   ¦--train_credit_bureau_a_1_2  
-## [11,]      ¦   ¦--train_credit_bureau_a_1_3  
-## [12,]      ¦   ¦--train_credit_bureau_a_2_0  
-## [13,]      ¦   ¦--train_credit_bureau_a_2_1  
-## [14,]      ¦   ¦--train_credit_bureau_a_2_10 
-## [15,]      ¦   ¦--train_credit_bureau_a_2_2  
-## [16,]      ¦   ¦--train_credit_bureau_a_2_3  
-## [17,]      ¦   ¦--train_credit_bureau_a_2_4  
-## [18,]      ¦   ¦--train_credit_bureau_a_2_5  
-## [19,]      ¦   ¦--train_credit_bureau_a_2_6  
-## [20,]      ¦   ¦--train_credit_bureau_a_2_7  
-## [21,]      ¦   ¦--train_credit_bureau_a_2_8  
-## [22,]      ¦   ¦--train_credit_bureau_a_2_9  
-## [23,]      ¦   ¦--train_credit_bureau_b_1    
-## [24,]      ¦   ¦--train_credit_bureau_b_2    
-## [25,]      ¦   ¦--train_debitcard_1          
-## [26,]      ¦   ¦--train_deposit_1            
-## [27,]      ¦   ¦--train_other_1              
-## [28,]      ¦   ¦--train_person_1             
-## [29,]      ¦   ¦--train_person_2             
-## [30,]      ¦   ¦--train_static_0_0           
-## [31,]      ¦   ¦--train_static_0_1           
-## [32,]      ¦   ¦--train_static_cb_0          
-## [33,]      ¦   ¦--train_tax_registry_a_1     
-## [34,]      ¦   ¦--train_tax_registry_b_1     
-## [35,]      ¦   °--train_tax_registry_c_1     
-## [36,]      °--test                           
-## [37,]          ¦--test_applprev_1_0          
-## [38,]          ¦--test_applprev_1_1          
-## [39,]          ¦--test_applprev_1_2          
-## [40,]          ¦--test_applprev_2            
-## [41,]          ¦--test_base                  
-## [42,]          ¦--test_credit_bureau_a_1_0   
-## [43,]          ¦--test_credit_bureau_a_1_1   
-## [44,]          ¦--test_credit_bureau_a_1_2   
-## [45,]          ¦--test_credit_bureau_a_1_3   
-## [46,]          ¦--test_credit_bureau_a_1_4   
-## [47,]          ¦--test_credit_bureau_a_2_0   
-## [48,]          ¦--test_credit_bureau_a_2_1   
-## [49,]          ¦--test_credit_bureau_a_2_10  
-## [50,]          ¦--test_credit_bureau_a_2_11  
-## [51,]          ¦--test_credit_bureau_a_2_2   
-## [52,]          ¦--test_credit_bureau_a_2_3   
-## [53,]          ¦--test_credit_bureau_a_2_4   
-## [54,]          ¦--test_credit_bureau_a_2_5   
-## [55,]          ¦--test_credit_bureau_a_2_6   
-## [56,]          ¦--test_credit_bureau_a_2_7   
-## [57,]          ¦--test_credit_bureau_a_2_8   
-## [58,]          ¦--test_credit_bureau_a_2_9   
-## [59,]          ¦--test_credit_bureau_b_1     
-## [60,]          ¦--test_credit_bureau_b_2     
-## [61,]          ¦--test_debitcard_1           
-## [62,]          ¦--test_deposit_1             
-## [63,]          ¦--test_other_1               
-## [64,]          ¦--test_person_1              
-## [65,]          ¦--test_person_2              
-## [66,]          ¦--test_static_0_0            
-## [67,]          ¦--test_static_0_1            
-## [68,]          ¦--test_static_0_2            
-## [69,]          ¦--test_static_cb_0           
-## [70,]          ¦--test_tax_registry_a_1      
-## [71,]          ¦--test_tax_registry_b_1      
-## [72,]          °--test_tax_registry_c_1</code></pre>
-<p>We see that all the original csv files are organized by a prefix
-<code>test_</code> or <code>train_</code>. These can be further related
-by numeral suffixes that denote either 1) related tables split by
-columns (<code>train_person_1</code>, <code>train_person_2</code>) or 2)
-related tables split by rows
-(<code>train_credit_bureau_a_2_1</code>,<code>train_credit_bureau_a_2_2</code>,…,<code>train_credit_bureau_a_2_8</code>).</p>
-<p>In addition, a <code>feature_definitions.csv</code> file was provided
-that mapped column names to feature definitions. For future reference,
-we create a tibble to map feature definitions to column names to table
-names.</p>
-<pre class="r"><code># import feature definitions
-features &lt;- here(&quot;home-credit-credit-risk-model-stability&quot;,&quot;feature_definitions.csv&quot;) %&gt;% read_csv(show_col_types = FALSE)
+home_recipe &lt;- recipe(target ~ ., data = home_train) 
+# recipe
+home_blueprint &lt;- home_recipe  %&gt;% 
+  step_dummy(all_nominal_predictors()) %&gt;% 
+  step_center(all_numeric(), -all_outcomes()) %&gt;%
+  step_scale(all_numeric(), -all_outcomes()) %&gt;% 
+  step_impute_knn(-all_outcomes())
 
-# table fields mapped to feature description
-train_features &lt;- train_fields %&gt;% unnest(everything()) %&gt;% left_join(features, by = c(&quot;fields&quot; = &quot;Variable&quot;)) %&gt;% select(fields, everything())
-train_features %&gt;% select(fields, table_name,Description ) %&gt;% head()</code></pre>
+
+home_prep &lt;- prep(home_blueprint, training = home_train)
+
+# near zero variance
+caret::nearZeroVar(home_train, saveMetrics = TRUE) %&gt;% 
+  tibble::rownames_to_column() %&gt;% 
+  filter(nzv)</code></pre>
 <div class="kable-table">
 <table>
 <thead>
 <tr>
 <th style="text-align:left;">
-fields
+rowname
+</th>
+<th style="text-align:right;">
+freqRatio
+</th>
+<th style="text-align:right;">
+percentUnique
 </th>
 <th style="text-align:left;">
-table_name
+zeroVar
 </th>
 <th style="text-align:left;">
-Description
+nzv
 </th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:left;">
-case_id
-</td>
-<td style="text-align:left;">
-train_applprev_1_0
-</td>
-<td style="text-align:left;">
-NA
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-actualdpd_943P
-</td>
-<td style="text-align:left;">
-train_applprev_1_0
-</td>
-<td style="text-align:left;">
-Days Past Due (DPD) of previous contract (actual).
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-annuity_853A
-</td>
-<td style="text-align:left;">
-train_applprev_1_0
-</td>
-<td style="text-align:left;">
-Monthly annuity for previous applications.
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-approvaldate_319D
-</td>
-<td style="text-align:left;">
-train_applprev_1_0
-</td>
-<td style="text-align:left;">
-Approval Date of Previous Application
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-byoccupationinc_3656910L
-</td>
-<td style="text-align:left;">
-train_applprev_1_0
-</td>
-<td style="text-align:left;">
-Applicant’s income from previous applications.
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-cancelreason_3545846M
-</td>
-<td style="text-align:left;">
-train_applprev_1_0
-</td>
-<td style="text-align:left;">
-Application cancellation reason.
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
-<div id="base_train" class="section level3" number="0.3.3">
-<h3><span class="header-section-number">0.3.3</span> Base_train</h3>
-<p>The goal of this competition is to predict <code>target</code>, which
-can be found in <code>train_base</code>. The definition of
-<code>target</code>, found on a <a href="https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/discussion/477074">forum
-Q&amp;A</a>, is defined as:</p>
-<pre><code>...unpaid payment (one is enough) in certain time period. There is also some time tolerance (e.g. one day late is not default) and amount tolerance (if client paid $100 instead of $100.10) ). </code></pre>
-<p>Here’s some information on <code>train_base</code>.</p>
-<ul>
-<li><strong>Column names, type</strong></li>
-</ul>
-<pre class="r"><code># Base training dataset - summary
-# table columns
-base_columns &lt;- dbGetQuery(con, &quot;PRAGMA table_info(train_base)&quot;)
-base_columns %&gt;% head() </code></pre>
-<div class="kable-table">
-<table>
-<thead>
-<tr>
-<th style="text-align:right;">
-cid
-</th>
-<th style="text-align:left;">
-name
-</th>
-<th style="text-align:left;">
-type
-</th>
-<th style="text-align:right;">
-notnull
-</th>
-<th style="text-align:left;">
-dflt_value
-</th>
-<th style="text-align:right;">
-pk
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:left;">
-case_id
-</td>
-<td style="text-align:left;">
-INTEGER
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:left;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:left;">
-date_decision
-</td>
-<td style="text-align:left;">
-TEXT
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:left;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-2
-</td>
-<td style="text-align:left;">
-MONTH
-</td>
-<td style="text-align:left;">
-INTEGER
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:left;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-3
-</td>
-<td style="text-align:left;">
-WEEK_NUM
-</td>
-<td style="text-align:left;">
-INTEGER
-</td>
-<td style="text-align:right;">
-0
-</td>
-<td style="text-align:left;">
-NA
-</td>
-<td style="text-align:right;">
-0
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-4
-</td>
 <td style="text-align:left;">
 target
 </td>
-<td style="text-align:left;">
-INTEGER
+<td style="text-align:right;">
+30.80937
 </td>
 <td style="text-align:right;">
-0
+0.000131
 </td>
 <td style="text-align:left;">
-NA
+FALSE
 </td>
-<td style="text-align:right;">
-0
+<td style="text-align:left;">
+TRUE
 </td>
 </tr>
 </tbody>
 </table>
 </div>
-<ul>
-<li><strong>Number of rows</strong></li>
-</ul>
-<pre class="r"><code># table rows
-base_rows &lt;- dbGetQuery(con, &quot;SELECT COUNT(*) FROM train_base&quot;)
-base_rows %&gt;% head() </code></pre>
-<div class="kable-table">
-<table>
-<thead>
-<tr>
-<th style="text-align:right;">
-COUNT(*)
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:right;">
-1526659
-</td>
-</tr>
-</tbody>
-</table>
 </div>
-<ul>
-<li><strong>Number of rows per participant</strong></li>
-</ul>
-<pre class="r"><code># rows per participant
-base_rows_per_id &lt;- dbGetQuery(con, &quot;SELECT case_id, COUNT(*) FROM train_base GROUP BY case_id&quot;)
-base_rows_per_id %&gt;% head()</code></pre>
+<div id="set-up-random-forest-workflow" class="section level3" number="1.4.2">
+<h3><span class="header-section-number">1.4.2</span> Set up random
+forest workflow</h3>
+<pre class="r"><code># cross validation folds
+cv_folds &lt;-
+ vfold_cv(home_train, 
+          v = 5, 
+          strata = &quot;target&quot;,
+          set.seed = 123) 
+
+# random forest specification
+rf_spec &lt;- 
+  rand_forest(
+    mtry = 2,
+    min_n = 10
+  ) %&gt;% 
+  set_engine(&quot;ranger&quot;, importance = &quot;impurity&quot;, num.threads = 4) %&gt;% 
+  set_mode(&quot;classification&quot;)
+
+# workflow
+rf_wflow_tuned &lt;-
+ workflow() %&gt;%
+ add_recipe(home_blueprint) %&gt;% 
+ add_model(rf_spec) </code></pre>
+</div>
+<div id="cross-validated-randomforest" class="section level3" number="1.4.3">
+<h3><span class="header-section-number">1.4.3</span> Cross-validated
+Randomforest</h3>
+<p>Test model with informed hyperparameters using cross-validation.</p>
+<pre class="r"><code># Use multiple cores
+all_cores &lt;- parallel::detectCores(logical = FALSE)
+library(doParallel)
+cl &lt;- makePSOCKcluster(all_cores)
+registerDoParallel(cl)
+
+# Run cross-validated random forest
+rf_res &lt;-
+  rf_wflow_tuned %&gt;%
+  fit_resamples(
+    resamples = cv_folds,
+    metrics = metric_set(
+      recall, precision, f_meas,
+      accuracy,roc_auc, sens, spec),
+    control = control_resamples(save_pred = TRUE, allow_par = TRUE, parallel_over = &quot;everything&quot;,verbose = TRUE)
+    )
+
+# Assess overall performance
+ rf_res %&gt;%  collect_metrics(summarize = TRUE)
+ 
+# Observe individual model performance
+compare_cv_rf &lt;- rf_res %&gt;%  collect_metrics(summarize = FALSE) 
+
+saveRDS(rf_res, &quot;rf_res.rds&quot;)
+saveRDS(compare_cv_rf, &quot;compare_cv_rf.rds&quot;)</code></pre>
+<pre class="r"><code>rdsread(&quot;rf_res&quot;)
+
+ rf_res %&gt;%  collect_metrics(summarize = TRUE)</code></pre>
 <div class="kable-table">
 <table>
 <thead>
 <tr>
-<th style="text-align:right;">
-case_id
+<th style="text-align:left;">
+.metric
+</th>
+<th style="text-align:left;">
+.estimator
 </th>
 <th style="text-align:right;">
-COUNT(*)
+mean
+</th>
+<th style="text-align:right;">
+n
+</th>
+<th style="text-align:right;">
+std_err
+</th>
+<th style="text-align:left;">
+.config
 </th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align:right;">
-0
+<td style="text-align:left;">
+accuracy
+</td>
+<td style="text-align:left;">
+binary
 </td>
 <td style="text-align:right;">
-1
+0.9685627
 </td>
-</tr>
-<tr>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-2
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-3
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
-<td style="text-align:right;">
-4
-</td>
-<td style="text-align:right;">
-1
-</td>
-</tr>
-<tr>
 <td style="text-align:right;">
 5
 </td>
 <td style="text-align:right;">
-1
+0.0001084
+</td>
+<td style="text-align:left;">
+Preprocessor1_Model1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+f_meas
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+0.9840303
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+0.0000560
+</td>
+<td style="text-align:left;">
+Preprocessor1_Model1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+precision
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+0.9685627
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+0.0001084
+</td>
+<td style="text-align:left;">
+Preprocessor1_Model1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+recall
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+1.0000000
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+<td style="text-align:left;">
+Preprocessor1_Model1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+roc_auc
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+0.6315852
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+0.0014608
+</td>
+<td style="text-align:left;">
+Preprocessor1_Model1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+sens
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+1.0000000
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+<td style="text-align:left;">
+Preprocessor1_Model1
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+spec
+</td>
+<td style="text-align:left;">
+binary
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+<td style="text-align:right;">
+5
+</td>
+<td style="text-align:right;">
+0.0000000
+</td>
+<td style="text-align:left;">
+Preprocessor1_Model1
 </td>
 </tr>
 </tbody>
 </table>
 </div>
-<pre class="r"><code># sum of rows
-row_per_users &lt;- dbGetQuery(con, &quot;SELECT row_count, count(*) as user_count
-FROM 
-(SELECT count(case_id) AS row_count 
-FROM train_base
-GROUP BY case_id)
-GROUP BY row_count&quot;)
+<pre class="r"><code> compare_cv_rf &lt;- rf_res %&gt;%  collect_metrics(summarize = FALSE) </code></pre>
+</div>
+</div>
+<div id="prediction" class="section level2" number="1.5">
+<h2><span class="header-section-number">1.5</span> Prediction</h2>
+<p>Run informed model on test data and obtain predicted probabilities
+for <code>target</code> class.</p>
+<pre class="r"><code># preprocess recipe 
+preprocess_home &lt;- recipe(target ~ ., data = home_train) %&gt;% 
+  step_dummy(all_nominal_predictors()) %&gt;% 
+  step_normalize(all_predictors()) %&gt;% 
+  step_impute_knn(-all_outcomes())
 
-row_per_users %&gt;% head() </code></pre>
-<div class="kable-table">
-<table>
-<thead>
-<tr>
-<th style="text-align:right;">
-row_count
-</th>
-<th style="text-align:right;">
-user_count
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:right;">
-1526659
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-<p>Now we have an idea of the main table we’ll be working with. Since
-the prediction <code>target</code> is only available for the
-<code>case_id</code> present in <code>train_base</code>, the first step
-for reducing the data load is to filter for the same
-<code>case_id</code> in all the other supplemental tables. Before we do
-that, however, I want to simplify the number of tables I have by joining
-tables split by rows. This will reduce the number of table
-<code>LEFT JOIN</code>s I will have to perform later on.</p>
-</div>
-<div id="joining-split-tables" class="section level3" number="0.3.4">
-<h3><span class="header-section-number">0.3.4</span> Joining split
-tables</h3>
-<p>The split tables we’re looking for share the same
-<code>columns</code> but different <code>rows</code>. We want to 1)
-identify tables sharing the same columns , 2) identify the shared naming
-scheme that tbese split tables use, and 3) join the split table rows by
-the common naming scheme. Here are the steps to set this up:</p>
-<ul>
-<li>Create a tibble with original table names mapped to all column
-names</li>
-</ul>
-<pre class="r fold-show"><code># renew datatable
-datatables &lt;- dbListTables(con)
-# Filter original tables
-original_fields &lt;- tibble(table = datatables) %&gt;% filter(
-  str_detect(table, &quot;test|train&quot;),
-  str_detect(table, &quot;id|ID|_U|joined&quot;, negate = TRUE)
-) %&gt;% mutate(
-  fields = map(table, ~dbListFields(con, .)),
-  info = map(table, ~dbGetQuery(con, str_c(&quot;PRAGMA table_info(&quot;,.,&quot;)&quot;)))
-) %&gt;% select(table, fields) %&gt;% unnest(fields)</code></pre>
-<ul>
-<li>First extract common naming scheme using regex. We then map the
-naming scheme to original table name and its respective number of
-columns. We expect that for any set tables sharing a common scheme, the
-set should share the same number of columns.</li>
-</ul>
-<pre class="r fold-show"><code># map extracted scheme to original table name, # of columns
-split_datasets_revised &lt;- original_fields %&gt;% select(table) %&gt;% unique() %&gt;% 
-  mutate(table_name_extract =str_extract(table,&quot;[A-Za-z_]*_\\d(?=_\\d)&quot; )) %&gt;% 
-  select(table, table_name_extract) %&gt;% mutate(
-  ncol = map(table, ~dbGetQuery(con, str_c(&quot;PRAGMA table_info(&quot;,.,&quot;)&quot;)) %&gt;% nrow()) ) %&gt;% unnest(ncol)
-split_datasets_revised %&gt;% head()</code></pre>
-<div class="kable-table">
-<table>
-<thead>
-<tr>
-<th style="text-align:left;">
-table
-</th>
-<th style="text-align:left;">
-table_name_extract
-</th>
-<th style="text-align:right;">
-ncol
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-test_applprev_1_0
-</td>
-<td style="text-align:left;">
-test_applprev_1
-</td>
-<td style="text-align:right;">
-41
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_applprev_1_1
-</td>
-<td style="text-align:left;">
-test_applprev_1
-</td>
-<td style="text-align:right;">
-41
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_applprev_1_2
-</td>
-<td style="text-align:left;">
-test_applprev_1
-</td>
-<td style="text-align:right;">
-41
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_applprev_2
-</td>
-<td style="text-align:left;">
-NA
-</td>
-<td style="text-align:right;">
-6
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_base
-</td>
-<td style="text-align:left;">
-NA
-</td>
-<td style="text-align:right;">
-4
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_credit_bureau_a_1_0
-</td>
-<td style="text-align:left;">
-test_credit_bureau_a_1
-</td>
-<td style="text-align:right;">
-79
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-<ul>
-<li>Set up the join query for split tables. Since these are vertical
-rowbinding, we use <code>UNION</code> statements to create new joined
-tables suffxied with <code>_U</code>.</li>
-</ul>
-<pre class="r"><code># joined table set names
-split_dataset_names &lt;- split_datasets_revised$table_name_extract %&gt;% unique() %&gt;% na.omit()
-# create UNION/create table query for every split tables
-union_query_revised &lt;- 
-  # extract unique shared table names
-  split_datasets_revised %&gt;% select(table_name_extract) %&gt;% na.omit() %&gt;% unique() %&gt;% 
-  # join to identify split tables
-  left_join(split_datasets_revised,by = join_by(table_name_extract)) %&gt;%
-  # add # of split tables per group
-  group_by(table_name_extract) %&gt;% add_tally() %&gt;% 
-  # iterate SELECT statements for SQL query
-  mutate(queries = str_c(&quot;SELECT * FROM &quot;, table)) %&gt;% 
-  # create single query for each table
-  select(table_name_extract, queries) %&gt;% group_by(table_name_extract) %&gt;% nest(nested_query = queries) %&gt;% 
-  # create combined table
-  mutate(
-         combined_query = nested_query[[1]] %&gt;% pull(queries) %&gt;% paste0(., collapse = &quot; &quot;),
-         union_query = str_replace_all(combined_query,&quot;(\\d )(?=SELECT)&quot;,&quot;\\1UNION &quot; ),
-         write_query = str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,table_name_extract,&quot;_U&quot;,&quot; AS &quot;, union_query))
 
-# examine the queries
-union_query_revised %&gt;% select(table_name_extract,write_query) %&gt;% head() </code></pre>
-<div class="kable-table">
-<table>
-<thead>
-<tr>
-<th style="text-align:left;">
-table_name_extract
-</th>
-<th style="text-align:left;">
-write_query
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-test_applprev_1
-</td>
-<td style="text-align:left;">
-CREATE TABLE IF NOT EXISTS test_applprev_1_U AS SELECT * FROM
-test_applprev_1_0 UNION SELECT * FROM test_applprev_1_1 UNION SELECT *
-FROM test_applprev_1_2
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_credit_bureau_a_1
-</td>
-<td style="text-align:left;">
-CREATE TABLE IF NOT EXISTS test_credit_bureau_a_1_U AS SELECT * FROM
-test_credit_bureau_a_1_0 UNION SELECT * FROM test_credit_bureau_a_1_1
-UNION SELECT * FROM test_credit_bureau_a_1_2 UNION SELECT * FROM
-test_credit_bureau_a_1_3 UNION SELECT * FROM test_credit_bureau_a_1_4
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_credit_bureau_a_2
-</td>
-<td style="text-align:left;">
-CREATE TABLE IF NOT EXISTS test_credit_bureau_a_2_U AS SELECT * FROM
-test_credit_bureau_a_2_0 UNION SELECT * FROM test_credit_bureau_a_2_1
-UNION SELECT * FROM test_credit_bureau_a_2_10 UNION SELECT * FROM
-test_credit_bureau_a_2_11 UNION SELECT * FROM test_credit_bureau_a_2_2
-UNION SELECT * FROM test_credit_bureau_a_2_3 UNION SELECT * FROM
-test_credit_bureau_a_2_4 UNION SELECT * FROM test_credit_bureau_a_2_5
-UNION SELECT * FROM test_credit_bureau_a_2_6 UNION SELECT * FROM
-test_credit_bureau_a_2_7 UNION SELECT * FROM test_credit_bureau_a_2_8
-UNION SELECT * FROM test_credit_bureau_a_2_9
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_static_0
-</td>
-<td style="text-align:left;">
-CREATE TABLE IF NOT EXISTS test_static_0_U AS SELECT * FROM
-test_static_0_0 UNION SELECT * FROM test_static_0_1 UNION SELECT * FROM
-test_static_0_2
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-train_applprev_1
-</td>
-<td style="text-align:left;">
-CREATE TABLE IF NOT EXISTS train_applprev_1_U AS SELECT * FROM
-train_applprev_1_0 UNION SELECT * FROM train_applprev_1_1
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-train_credit_bureau_a_1
-</td>
-<td style="text-align:left;">
-CREATE TABLE IF NOT EXISTS train_credit_bureau_a_1_U AS SELECT * FROM
-train_credit_bureau_a_1_0 UNION SELECT * FROM train_credit_bureau_a_1_1
-UNION SELECT * FROM train_credit_bureau_a_1_2 UNION SELECT * FROM
-train_credit_bureau_a_1_3
-</td>
-</tr>
-</tbody>
-</table>
-</div>
-<pre class="r"><code># SQL - union 
-# execute each query
-union_query_revised$write_query %&gt;% walk(~dbExecute(con,.))</code></pre>
-</div>
-</div>
-<div id="subset-supplemental-data" class="section level2" number="0.4">
-<h2><span class="header-section-number">0.4</span> Subset supplemental
-data</h2>
-<p>Since the main focus of the operation is predicting
-<code>target</code> from <code>train_base</code>, we can reduce our
-operations to just data that’s available for <code>case_id</code>s that
-are present in <code>train_base</code>. This can be done by using
-<code>INNER JOIN</code> and filtering out data from all supplemental
-sources with <code>train_base$case_id</code>.</p>
-<ul>
-<li>First subset <code>case_id</code> column from base tables</li>
-</ul>
-<pre class="r"><code># create IDs to filter out relevant IDs in data tables
-dbExecute(con,&quot;CREATE TABLE IF NOT EXISTS train_id AS SELECT case_id FROM train_base&quot;)
-dbExecute(con,&quot;CREATE TABLE IF NOT EXISTS test_id AS SELECT case_id FROM test_base&quot;)</code></pre>
-<ul>
-<li>Some of supplemental tables have multiple rows per participant. The
-key for the main participant data is the value 0 for numgroup_1 and
-numgroup_2. Here we set up a numgroup tibble for future mapping. (1 = 0
-mapping, 0 = other number)</li>
-</ul>
-<pre class="r"><code># numgroup index
-numgroup_tibble &lt;- original_fields %&gt;% 
-  filter(str_detect(fields, &quot;num_group&quot;)) %&gt;% 
-  pivot_wider(names_from = fields, values_from = fields, values_fn = ~1, values_fill = 0) 
+# fit train data with tuned workflow
+home_rf_fit &lt;- rf_wflow_tuned %&gt;% 
+  fit(home_train)
+# extract recipe
+wf_extracted &lt;- home_rf_fit %&gt;% extract_recipe()
+# extract model
+home_final_tuned &lt;- home_rf_fit %&gt;% extract_fit_parsnip()
 
-numgroup_tibble %&gt;% head()</code></pre>
+# preprocess test data
+home_test_processed &lt;- wf_extracted %&gt;% bake(new_data = home_test)
+
+# predict test data using extracted model
+pred_home &lt;- predict(home_final_tuned, new_data = home_test_processed)
+
+# predicted class probability 
+pred_probs &lt;- predict(home_final_tuned, new_data = home_test_processed, type = &quot;prob&quot;)
+# compare class prediction and prediction probability
+df_new_pre_processed &lt;- cbind(pred_home, pred_probs)
+df_new_pre_processed
+
+saveRDS(df_new_pre_processed, &quot;df_new_pre_processed.rds&quot;)</code></pre>
+<pre class="r"><code>rdsread(&quot;df_new_pre_processed&quot;)
+df_new_pre_processed</code></pre>
 <div class="kable-table">
 <table>
 <thead>
 <tr>
 <th style="text-align:left;">
-table
+.pred_class
 </th>
 <th style="text-align:right;">
-num_group1
+.pred_0
 </th>
 <th style="text-align:right;">
-num_group2
+.pred_1
 </th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td style="text-align:left;">
-test_applprev_1_0
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:right;">
 0
+</td>
+<td style="text-align:right;">
+0.9534976
+</td>
+<td style="text-align:right;">
+0.0465024
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
-test_applprev_1_1
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:right;">
 0
+</td>
+<td style="text-align:right;">
+0.9418981
+</td>
+<td style="text-align:right;">
+0.0581019
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
-test_applprev_1_2
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:right;">
 0
+</td>
+<td style="text-align:right;">
+0.9582279
+</td>
+<td style="text-align:right;">
+0.0417721
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
-test_applprev_2
+0
 </td>
 <td style="text-align:right;">
-1
+0.9802462
 </td>
 <td style="text-align:right;">
-1
+0.0197538
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
-test_credit_bureau_a_1_0
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:right;">
 0
+</td>
+<td style="text-align:right;">
+0.9802462
+</td>
+<td style="text-align:right;">
+0.0197538
 </td>
 </tr>
 <tr>
 <td style="text-align:left;">
-test_credit_bureau_a_1_1
-</td>
-<td style="text-align:right;">
-1
-</td>
-<td style="text-align:right;">
 0
+</td>
+<td style="text-align:right;">
+0.9802462
+</td>
+<td style="text-align:right;">
+0.0197538
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+0
+</td>
+<td style="text-align:right;">
+0.9802462
+</td>
+<td style="text-align:right;">
+0.0197538
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+0
+</td>
+<td style="text-align:right;">
+0.9802462
+</td>
+<td style="text-align:right;">
+0.0197538
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+0
+</td>
+<td style="text-align:right;">
+0.9802462
+</td>
+<td style="text-align:right;">
+0.0197538
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+0
+</td>
+<td style="text-align:right;">
+0.9802462
+</td>
+<td style="text-align:right;">
+0.0197538
 </td>
 </tr>
 </tbody>
 </table>
 </div>
-<ul>
-<li><p>Create query to <code>INNER JOIN</code> and filter tables by
-<code>train_base$case_id</code>, <code>numgroup</code> and save filtered
-tables with a <code>_id</code> suffix.</p>
-<pre class="r"><code># renew data table
-datatables &lt;- dbListTables(con)
-
-# filter data by id
-id_join_query_revised &lt;- tibble(tables = datatables) %&gt;% 
-# filter for original tables,joined tables 
-filter(
-  # filter out split table names
-  str_detect(tables,str_c(str_c(split_dataset_names,&quot;_\\d&quot;), collapse = &quot;|&quot;),
-             negate = TRUE))%&gt;% 
-filter(str_detect(tables, &quot;id|ID|joined|base&quot;, negate = TRUE)) %&gt;% 
-filter(str_detect(tables, &quot;train|test&quot;)) %&gt;% 
-# create query
-mutate(
-query = case_when(
-  str_detect(tables, &quot;train&quot;) ~ str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,tables, &quot;_id&quot;,&quot; AS SELECT * FROM &quot;,tables,
-              &quot; INNER JOIN train_id ON &quot;, tables),
-  str_detect(tables, &quot;test&quot;) ~ str_c(&quot;CREATE TABLE IF NOT EXISTS &quot;,tables, &quot;_id&quot;,&quot; AS SELECT * FROM &quot;,tables,
-              &quot; INNER JOIN test_id ON &quot;, tables)
-),
-query = case_when(
-  str_detect(tables, &quot;train&quot;) ~ str_c(query, &quot;.case_id = train_id.case_id&quot;),
-  str_detect(tables, &quot;test&quot;) ~ str_c(query, &quot;.case_id = test_id.case_id&quot;)
-)
-)
-# filter rows by num_group
-id_join_query_num &lt;- id_join_query_revised %&gt;% left_join(numgroup_tibble , by = c(&quot;tables&quot; = &quot;table&quot;)) %&gt;% mutate(
-query = case_when(
-  num_group1 == 1 &amp; num_group2 == 0 ~ str_c(query, &quot; AND num_group1 = 0&quot;),
-  num_group1 == 1 &amp; num_group2 == 1  ~ str_c(query, &quot; AND num_group1 = 0 AND num_group2 = 0&quot;),
-  .default = query
-)
-)
-# show queries
-id_join_query_num$query %&gt;% head()</code></pre>
-<pre><code>## [1] &quot;CREATE TABLE IF NOT EXISTS test_applprev_1_U_id AS SELECT * FROM test_applprev_1_U INNER JOIN test_id ON test_applprev_1_U.case_id = test_id.case_id&quot;                                                     
-## [2] &quot;CREATE TABLE IF NOT EXISTS test_applprev_2_id AS SELECT * FROM test_applprev_2 INNER JOIN test_id ON test_applprev_2.case_id = test_id.case_id AND num_group1 = 0 AND num_group2 = 0&quot;                     
-## [3] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_a_1_U_id AS SELECT * FROM test_credit_bureau_a_1_U INNER JOIN test_id ON test_credit_bureau_a_1_U.case_id = test_id.case_id&quot;                                
-## [4] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_a_2_U_id AS SELECT * FROM test_credit_bureau_a_2_U INNER JOIN test_id ON test_credit_bureau_a_2_U.case_id = test_id.case_id&quot;                                
-## [5] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_b_1_id AS SELECT * FROM test_credit_bureau_b_1 INNER JOIN test_id ON test_credit_bureau_b_1.case_id = test_id.case_id AND num_group1 = 0&quot;                   
-## [6] &quot;CREATE TABLE IF NOT EXISTS test_credit_bureau_b_2_id AS SELECT * FROM test_credit_bureau_b_2 INNER JOIN test_id ON test_credit_bureau_b_2.case_id = test_id.case_id AND num_group1 = 0 AND num_group2 = 0&quot;</code></pre></li>
-</ul>
-<pre class="r"><code># execute
-id_join_query_num$query %&gt;% walk(~dbExecute(con,.))</code></pre>
-</div>
-<div id="joining-features" class="section level2" number="0.5">
-<h2><span class="header-section-number">0.5</span> Joining features</h2>
-<div id="feature-subset" class="section level3" number="0.5.1">
-<h3><span class="header-section-number">0.5.1</span> Feature subset</h3>
-<p>To facilitate a quick analysis we’re going to pick out some variables
-that I think are theoretically relevant in predicting
-<code>target</code>:</p>
-<ol style="list-style-type: decimal">
-<li><code>birth_259D</code>: Birth date</li>
-<li><code>education_927M</code>: Education</li>
-<li><code>empl_employedfrom_271D</code>: Employment date</li>
-<li><code>empl_employedtotal_800L</code>: Employment length</li>
-<li><code>empl_industry_691L</code>: Job industry</li>
-<li><code>familystate_447L</code>: Family status</li>
-<li><code>incometype_1044TL</code>: Salary type</li>
-<li><code>mainoccupationinc_384A</code>: Income amount</li>
-<li><code>riskassesment_940T</code>: Normalized risk - assessed by
-credit bureau</li>
-</ol>
-</div>
-<div id="join-sql" class="section level3" number="0.5.2">
-<h3><span class="header-section-number">0.5.2</span> Join SQL</h3>
-<ul>
-<li><p>We can use a tibble to map the selected features to their
-respective tables.</p>
-<pre class="r"><code># highlight features of interest and identify within datatables
-
-# pick features of interest and rename
-revised_feature_list &lt;- list(
-base = c(&quot;case_id&quot;),
-person_1_id = c(&quot;birth_259D&quot;, #birthdate
-             &quot;education_927M&quot;, # education
-             &quot;empl_employedfrom_271D&quot;, # employ date
-             &quot;empl_employedtotal_800L&quot;, # employ length
-             &quot;empl_industry_691L&quot;, # job industry
-             &quot;familystate_447L&quot;, # relationship
-             &quot;incometype_1044T&quot;, # salary type
-             &quot;mainoccupationinc_384A&quot;# income amount
-             ), 
-static_cb_0_id = c(&quot;riskassesment_940T&quot; #risk assessment - normalized
-                         )) 
-# link features of interest to data tables
-revised_features_tbl &lt;- 
-# set up variables as tibble
-tibble(table = names(revised_feature_list),
-       train_table = str_c(&quot;train_&quot;, table),
-       test_table = str_c(&quot;test_&quot;, table),
-     features = revised_feature_list ) %&gt;% unnest(features)</code></pre></li>
-<li><p>We’ll then set up the query parts using the mapped tibble.</p>
-<pre class="r"><code># create query for joining relevant features to train_base
-train_join &lt;- revised_features_tbl %&gt;% filter(str_detect(features, &quot;case_id&quot;, negate = TRUE)) %&gt;% na.omit() %&gt;% 
-# table.column query
-mutate(
-table_column = str_c(train_table,&quot;.&quot;, features)) %&gt;% 
-select(train_table, table_column) %&gt;% 
-mutate(
-  join_string = str_c(&quot;LEFT JOIN &quot;, train_table, &quot; ON &quot;),
-  id_string = str_c(&quot;train_base.case_id = &quot;,train_table, &quot;.case_id&quot;),
-  join_id_string = str_c(join_string, id_string)
-) %&gt;% unique()
-
-# create query for joining relevant features to train_test
-test_join &lt;- revised_features_tbl %&gt;% filter(str_detect(features, &quot;case_id&quot;, negate = TRUE)) %&gt;% na.omit() %&gt;% 
-# table.column query
-mutate(
-table_column = str_c(test_table,&quot;.&quot;, features)) %&gt;% 
-select(test_table, table_column) %&gt;% 
-mutate(
-  join_string = str_c(&quot;LEFT JOIN &quot;, test_table, &quot; ON &quot;),
-  id_string = str_c(&quot;test_base.case_id = &quot;,test_table, &quot;.case_id&quot;),
-  join_id_string = str_c(join_string, id_string)
-) %&gt;% unique()</code></pre>
-<ul>
-<li><p><code>train_base</code> set up</p>
-<pre class="r"><code>train_join %&gt;% select(table_column, join_id_string) %&gt;% head()</code></pre>
-<div class="kable-table">
-<table>
-<thead>
-<tr>
-<th style="text-align:left;">
-table_column
-</th>
-<th style="text-align:left;">
-join_id_string
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-train_person_1_id.birth_259D
-</td>
-<td style="text-align:left;">
-LEFT JOIN train_person_1_id ON train_base.case_id =
-train_person_1_id.case_id
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-train_person_1_id.education_927M
-</td>
-<td style="text-align:left;">
-LEFT JOIN train_person_1_id ON train_base.case_id =
-train_person_1_id.case_id
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-train_person_1_id.empl_employedfrom_271D
-</td>
-<td style="text-align:left;">
-LEFT JOIN train_person_1_id ON train_base.case_id =
-train_person_1_id.case_id
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-train_person_1_id.empl_employedtotal_800L
-</td>
-<td style="text-align:left;">
-LEFT JOIN train_person_1_id ON train_base.case_id =
-train_person_1_id.case_id
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-train_person_1_id.empl_industry_691L
-</td>
-<td style="text-align:left;">
-LEFT JOIN train_person_1_id ON train_base.case_id =
-train_person_1_id.case_id
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-train_person_1_id.familystate_447L
-</td>
-<td style="text-align:left;">
-LEFT JOIN train_person_1_id ON train_base.case_id =
-train_person_1_id.case_id
-</td>
-</tr>
-</tbody>
-</table>
-</div></li>
-<li><p><code>test_base</code> set up</p>
-<pre class="r"><code>test_join %&gt;% select(table_column, join_id_string) %&gt;% head()</code></pre>
-<div class="kable-table">
-<table>
-<thead>
-<tr>
-<th style="text-align:left;">
-table_column
-</th>
-<th style="text-align:left;">
-join_id_string
-</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align:left;">
-test_person_1_id.birth_259D
-</td>
-<td style="text-align:left;">
-LEFT JOIN test_person_1_id ON test_base.case_id =
-test_person_1_id.case_id
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_person_1_id.education_927M
-</td>
-<td style="text-align:left;">
-LEFT JOIN test_person_1_id ON test_base.case_id =
-test_person_1_id.case_id
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_person_1_id.empl_employedfrom_271D
-</td>
-<td style="text-align:left;">
-LEFT JOIN test_person_1_id ON test_base.case_id =
-test_person_1_id.case_id
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_person_1_id.empl_employedtotal_800L
-</td>
-<td style="text-align:left;">
-LEFT JOIN test_person_1_id ON test_base.case_id =
-test_person_1_id.case_id
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_person_1_id.empl_industry_691L
-</td>
-<td style="text-align:left;">
-LEFT JOIN test_person_1_id ON test_base.case_id =
-test_person_1_id.case_id
-</td>
-</tr>
-<tr>
-<td style="text-align:left;">
-test_person_1_id.familystate_447L
-</td>
-<td style="text-align:left;">
-LEFT JOIN test_person_1_id ON test_base.case_id =
-test_person_1_id.case_id
-</td>
-</tr>
-</tbody>
-</table>
-</div></li>
-</ul></li>
-<li><p>The parts can be strung together for the final query.</p>
-<pre class="r"><code># create the final train join query
-
-# all join TABLE on TABLE
-train_join_list &lt;- train_join$join_id_string %&gt;% unique() %&gt;%  str_c(collapse = &quot; &quot;)
-# all TABLE.COLUMNS
-train_table_column_join &lt;- train_join$table_column %&gt;% str_c(collapse = &quot;, &quot;) 
-# full query
-train_join_query &lt;- train_table_column_join   %&gt;% 
-# select train_base columns 
-str_c(&quot;SELECT train_base.*, &quot;,.) %&gt;% 
-# 
-str_c(., &quot; FROM train_base&quot;) %&gt;% 
-# left join table statements
-str_c(., &quot; &quot;,train_join_list) %&gt;% 
-# save as new table
-str_c(&quot;CREATE TABLE IF NOT EXISTS train_joined AS &quot;,.)
-
-# create the final train join query
-
-# all join TABLE on TABLE
-test_join_list &lt;- test_join$join_id_string %&gt;% unique() %&gt;%  str_c(collapse = &quot; &quot;)
-# all TABLE.COLUMNS
-test_table_column_join &lt;- test_join$table_column %&gt;% str_c(collapse = &quot;, &quot;) 
-# full query
-test_join_query &lt;- test_table_column_join   %&gt;% 
-# select test_base columns 
-str_c(&quot;SELECT test_base.*, &quot;,.) %&gt;% 
-# 
-str_c(., &quot; FROM test_base&quot;) %&gt;% 
-# left join table statements
-str_c(., &quot; &quot;,test_join_list) %&gt;% 
-# save as new table
-str_c(&quot;CREATE TABLE IF NOT EXISTS test_joined AS &quot;,.)</code></pre>
-<ul>
-<li><p><code>train_base</code> join query</p>
-<pre class="r"><code>    train_join_query </code></pre>
-<pre><code>## [1] &quot;CREATE TABLE IF NOT EXISTS train_joined AS SELECT train_base.*, train_person_1_id.birth_259D, train_person_1_id.education_927M, train_person_1_id.empl_employedfrom_271D, train_person_1_id.empl_employedtotal_800L, train_person_1_id.empl_industry_691L, train_person_1_id.familystate_447L, train_person_1_id.incometype_1044T, train_person_1_id.mainoccupationinc_384A, train_static_cb_0_id.riskassesment_940T FROM train_base LEFT JOIN train_person_1_id ON train_base.case_id = train_person_1_id.case_id LEFT JOIN train_static_cb_0_id ON train_base.case_id = train_static_cb_0_id.case_id&quot;</code></pre></li>
-<li><p><code>test_base</code> join query</p>
-<pre class="r"><code>    test_join_query</code></pre>
-<pre><code>## [1] &quot;CREATE TABLE IF NOT EXISTS test_joined AS SELECT test_base.*, test_person_1_id.birth_259D, test_person_1_id.education_927M, test_person_1_id.empl_employedfrom_271D, test_person_1_id.empl_employedtotal_800L, test_person_1_id.empl_industry_691L, test_person_1_id.familystate_447L, test_person_1_id.incometype_1044T, test_person_1_id.mainoccupationinc_384A, test_static_cb_0_id.riskassesment_940T FROM test_base LEFT JOIN test_person_1_id ON test_base.case_id = test_person_1_id.case_id LEFT JOIN test_static_cb_0_id ON test_base.case_id = test_static_cb_0_id.case_id&quot;</code></pre></li>
-</ul></li>
-</ul>
-<pre class="r"><code># join tables with selected features
-dbExecute(con, test_join_query)
-dbExecute(con, train_join_query)</code></pre>
-</div>
-</div>
-<div id="data-analysis" class="section level2" number="0.6">
-<h2><span class="header-section-number">0.6</span> Data analysis</h2>
-<p>Now that we have a dataset with all our relevant features, we can
-move into data anaysis and prediction. First we need to define our
-variable types across our test and train data.</p>
-<pre class="r"><code># read train table
-train_joined_df &lt;- dbGetQuery(con, &quot;SELECT * FROM train_joined&quot;) %&gt;% tibble()
-saveRDS(train_joined_df,&quot;train_joined_df.rds&quot;)
-# read test table
-test_joined_df &lt;- dbGetQuery(con, &quot;SELECT * FROM test_joined&quot;) %&gt;% tibble()
-saveRDS(test_joined_df,&quot;test_joined_df.rds&quot;)</code></pre>
-<ul>
-<li><p>Import and define variable types</p>
-<pre class="r fold_show"><code>train_joined_df&lt;- read_rds(&quot;train_joined_df.rds&quot;)
-# define train table variables
-train_joined_tbl &lt;- train_joined_df %&gt;%   
-# convert date to numeric
-mutate(
-date_decision = as_date(date_decision),
-birth_259D = as_date(birth_259D),
-age = time_length(difftime(date_decision, birth_259D), &quot;years&quot;), 
-month.n = month(date_decision),
-year.n = year(date_decision),
-week.n = WEEK_NUM %&gt;% as.numeric())  %&gt;%
-# label numeric, factors
-mutate(
-  across(c(matches(&quot;mainoccupationinc_384A|riskassesment_940T|
-                   age|\\.n&quot;)), 
-         ~ as.numeric(.)),
-  across(c(matches(&quot;education_927M|empl_employedtotal_800L|empl_industry_691L|
-                   familystate_447L|incometype_1044T|target|familystate_447L&quot;)), 
-         ~ as.factor(.))) </code></pre>
-<pre class="r"><code>test_joined_df&lt;- read_rds(&quot;test_joined_df.rds&quot;)
-
-# define test table variables
-test_joined_tbl &lt;- test_joined_df %&gt;%   
-# convert date to numeric
-mutate(
-date_decision = as_date(date_decision),
-birth_259D = as_date(birth_259D),
-age = time_length(difftime(date_decision, birth_259D), &quot;years&quot;),
-month.n = month(date_decision),
-year.n = year(date_decision),
-week.n = WEEK_NUM %&gt;% as.numeric()) %&gt;%
-# label numeric, factors
-mutate(
-  across(c(matches(&quot;mainoccupationinc_384A|riskassesment_940T|
-                   age|\\.n&quot;)), 
-         ~ as.numeric(.)),
-  across(c(matches(&quot;education_927M|empl_employedtotal_800L|empl_industry_691L|
-                   familystate_447L|incometype_1044T|target|familystate_447L&quot;)), 
-         ~ as.factor(.))) </code></pre>
-<ul>
-<li><p><code>train</code> df</p>
-<pre class="r"><code> train_joined_tbl %&gt;% glimpse()</code></pre>
-<pre><code>## Rows: 1,526,659
-## Columns: 18
-## $ case_id                 &lt;int&gt; 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 1…
-## $ date_decision           &lt;date&gt; 2019-01-03, 2019-01-03, 2019-01-04, 2019-01-03…
-## $ MONTH                   &lt;int&gt; 201901, 201901, 201901, 201901, 201901, 201901,…
-## $ WEEK_NUM                &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-## $ target                  &lt;fct&gt; 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…
-## $ birth_259D              &lt;date&gt; 1986-07-01, 1957-08-01, 1974-12-01, 1993-08-01…
-## $ education_927M          &lt;fct&gt; P97_36_170, P97_36_170, P97_36_170, P33_146_175…
-## $ empl_employedfrom_271D  &lt;chr&gt; &quot;2017-09-15&quot;, &quot;2008-10-29&quot;, &quot;2010-02-15&quot;, &quot;2018…
-## $ empl_employedtotal_800L &lt;fct&gt; MORE_FIVE, MORE_FIVE, MORE_FIVE, MORE_FIVE, MOR…
-## $ empl_industry_691L      &lt;fct&gt; OTHER, OTHER, OTHER, OTHER, OTHER, OTHER, EDUCA…
-## $ familystate_447L        &lt;fct&gt; MARRIED, DIVORCED, MARRIED, MARRIED, MARRIED, M…
-## $ incometype_1044T        &lt;fct&gt; SALARIED_GOVT, SALARIED_GOVT, EMPLOYED, EMPLOYE…
-## $ mainoccupationinc_384A  &lt;dbl&gt; 10800, 10000, 14000, 10000, 24000, 64000, 20000…
-## $ riskassesment_940T      &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
-## $ age                     &lt;dbl&gt; 32.50924, 61.42368, 44.09309, 25.42368, 25.0075…
-## $ month.n                 &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,…
-## $ year.n                  &lt;dbl&gt; 2019, 2019, 2019, 2019, 2019, 2019, 2019, 2019,…
-## $ week.n                  &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…</code></pre></li>
-<li><p><code>test</code> df</p>
-<pre class="r"><code>test_joined_tbl %&gt;% glimpse()</code></pre>
-<pre><code>## Rows: 10
-## Columns: 17
-## $ case_id                 &lt;int&gt; 57543, 57549, 57551, 57552, 57569, 57630, 57631…
-## $ date_decision           &lt;date&gt; 2020-10-06, 2020-10-06, 2020-10-06, 2020-10-07…
-## $ MONTH                   &lt;int&gt; 202010, 202010, 202010, 202010, 202010, 202010,…
-## $ WEEK_NUM                &lt;int&gt; 92, 92, 92, 92, 92, 92, 92, 92, 92, 92
-## $ birth_259D              &lt;date&gt; 1996-08-01, 1992-03-01, 1990-08-01, NA, NA, NA,…
-## $ education_927M          &lt;fct&gt; P97_36_170, P97_36_170, P97_36_170, NA, NA, NA…
-## $ empl_employedfrom_271D  &lt;chr&gt; &quot;2018-02-15&quot;, &quot;2019-05-04&quot;, &quot;2019-01-15&quot;, NA, N…
-## $ empl_employedtotal_800L &lt;fct&gt; MORE_ONE, MORE_ONE, MORE_FIVE, NA, NA, NA, NA, …
-## $ empl_industry_691L      &lt;fct&gt; OTHER, OTHER, OTHER, NA, NA, NA, NA, NA, NA, NA
-## $ familystate_447L        &lt;fct&gt; MARRIED, SINGLE, MARRIED, NA, NA, NA, NA, NA, N…
-## $ incometype_1044T        &lt;fct&gt; EMPLOYED, EMPLOYED, EMPLOYED, NA, NA, NA, NA, N…
-## $ mainoccupationinc_384A  &lt;dbl&gt; 36000, 15000, 24000, NA, NA, NA, NA, NA, NA, NA
-## $ riskassesment_940T      &lt;dbl&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA
-## $ age                     &lt;dbl&gt; 24.18070, 28.59959, 30.18207, NA, NA, NA, NA, N…
-## $ month.n                 &lt;dbl&gt; 10, 10, 10, 10, 10, 10, 10, 10, 10, 10
-## $ year.n                  &lt;dbl&gt; 2020, 2020, 2020, 2020, 2020, 2020, 2020, 2020,…
-## $ week.n                  &lt;dbl&gt; 92, 92, 92, 92, 92, 92, 92, 92, 92, 92</code></pre></li>
-</ul></li>
-</ul>
-<div id="summary-statistics" class="section level3" number="0.6.1">
-<h3><span class="header-section-number">0.6.1</span> Summary
-statistics</h3>
-<p>Here’s a look at some summary statistics.</p>
-</div>
-<div id="nominal-variables" class="section level3" number="0.6.2">
-<h3><span class="header-section-number">0.6.2</span> Nominal
-variables</h3>
-<pre class="r"><code>library(summarytools)
-
-# factor level proportions
-train_joined_tbl %&gt;% select(where(is.factor)) %&gt;% freq()</code></pre>
-<pre><code>## Frequencies  
-## train_joined_tbl$target  
-## Type: Factor  
-## 
-##                  Freq   % Valid   % Valid Cum.   % Total   % Total Cum.
-## ----------- --------- --------- -------------- --------- --------------
-##           0   1478665     96.86          96.86     96.86          96.86
-##           1     47994      3.14         100.00      3.14         100.00
-##        &lt;NA&gt;         0                               0.00         100.00
-##       Total   1526659    100.00         100.00    100.00         100.00
-## 
-## train_joined_tbl$education_927M  
-## Type: Factor  
-## 
-##                        Freq   % Valid   % Valid Cum.   % Total   % Total Cum.
-## ----------------- --------- --------- -------------- --------- --------------
-##          a55475b1    798046    52.274         52.274    52.274         52.274
-##       P106_81_188     54661     3.580         55.854     3.580         55.854
-##       P157_18_172       631     0.041         55.896     0.041         55.896
-##        P17_36_170      5481     0.359         56.255     0.359         56.255
-##       P33_146_175    258589    16.938         73.193    16.938         73.193
-##        P97_36_170    409251    26.807        100.000    26.807        100.000
-##              &lt;NA&gt;         0                              0.000        100.000
-##             Total   1526659   100.000        100.000   100.000        100.000
-## 
-## train_joined_tbl$empl_employedtotal_800L  
-## Type: Factor  
-## 
-##                           Freq   % Valid   % Valid Cum.   % Total   % Total Cum.
-## -------------------- --------- --------- -------------- --------- --------------
-##       (Empty string)    998344     65.39          65.39     65.39          65.39
-##             LESS_ONE     30467      2.00          67.39      2.00          67.39
-##            MORE_FIVE    371321     24.32          91.71     24.32          91.71
-##             MORE_ONE    126527      8.29         100.00      8.29         100.00
-##                 &lt;NA&gt;         0                               0.00         100.00
-##                Total   1526659    100.00         100.00    100.00         100.00
-## 
-## train_joined_tbl$empl_industry_691L  
-## Type: Factor  
-## 
-##                              Freq     % Valid   % Valid Cum.     % Total   % Total Cum.
-## ----------------------- --------- ----------- -------------- ----------- --------------
-##          (Empty string)   1004423    65.79223       65.79223    65.79223       65.79223
-##             AGRICULTURE      5288     0.34638       66.13861     0.34638       66.13861
-##             ARMY_POLICE        14     0.00092       66.13952     0.00092       66.13952
-##               ART_MEDIA       245     0.01605       66.15557     0.01605       66.15557
-##                CATERING      3508     0.22978       66.38536     0.22978       66.38536
-##       CHARITY_RELIGIOUS        25     0.00164       66.38699     0.00164       66.38699
-##               EDUCATION     30346     1.98774       68.37473     1.98774       68.37473
-##                 FINANCE      3150     0.20633       68.58106     0.20633       68.58106
-##                  GAMING        96     0.00629       68.58735     0.00629       68.58735
-##              GOVERNMENT     35440     2.32141       70.90876     2.32141       70.90876
-##                  HEALTH     13026     0.85324       71.76200     0.85324       71.76200
-##               INSURANCE       217     0.01421       71.77621     0.01421       71.77621
-##                      IT       279     0.01828       71.79449     0.01828       71.79449
-##                  LAWYER       564     0.03694       71.83143     0.03694       71.83143
-##           MANUFACTURING      9035     0.59182       72.42325     0.59182       72.42325
-##               MARKETING       239     0.01566       72.43890     0.01566       72.43890
-##                  MINING      3582     0.23463       72.67353     0.23463       72.67353
-##                   OTHER    386837    25.33880       98.01233    25.33880       98.01233
-##              POST_TELCO       612     0.04009       98.05241     0.04009       98.05241
-##             REAL_ESTATE      3680     0.24105       98.29346     0.24105       98.29346
-##             RECRUITMENT        85     0.00557       98.29903     0.00557       98.29903
-##                 TOURISM       513     0.03360       98.33263     0.03360       98.33263
-##                   TRADE     20696     1.35564       99.68827     1.35564       99.68827
-##          TRANSPORTATION      4318     0.28284       99.97111     0.28284       99.97111
-##                 WELNESS       441     0.02889      100.00000     0.02889      100.00000
-##                    &lt;NA&gt;         0                                0.00000      100.00000
-##                   Total   1526659   100.00000      100.00000   100.00000      100.00000
-## 
-## train_joined_tbl$familystate_447L  
-## Type: Factor  
-## 
-##                                Freq   % Valid   % Valid Cum.   % Total   % Total Cum.
-## ------------------------- --------- --------- -------------- --------- --------------
-##            (Empty string)    798046     52.27          52.27     52.27          52.27
-##                  DIVORCED     19296      1.26          53.54      1.26          53.54
-##       LIVING_WITH_PARTNER      8142      0.53          54.07      0.53          54.07
-##                   MARRIED    484846     31.76          85.83     31.76          85.83
-##                    SINGLE    183334     12.01          97.84     12.01          97.84
-##                   WIDOWED     32995      2.16         100.00      2.16         100.00
-##                      &lt;NA&gt;         0                               0.00         100.00
-##                     Total   1526659    100.00         100.00    100.00         100.00
-## 
-## train_joined_tbl$incometype_1044T  
-## Type: Factor  
-## 
-##                                    Freq      % Valid   % Valid Cum.      % Total   % Total Cum.
-## ----------------------------- --------- ------------ -------------- ------------ --------------
-##                      EMPLOYED    298158    19.530098      19.530098    19.530098      19.530098
-##                   HANDICAPPED         1     0.000066      19.530164     0.000066      19.530164
-##                 HANDICAPPED_2      7371     0.482819      20.012983     0.482819      20.012983
-##                 HANDICAPPED_3      5258     0.344412      20.357395     0.344412      20.357395
-##                         OTHER     11436     0.749087      21.106482     0.749087      21.106482
-##       PRIVATE_SECTOR_EMPLOYEE    490562    32.133043      53.239525    32.133043      53.239525
-##             RETIRED_PENSIONER    311028    20.373115      73.612640    20.373115      73.612640
-##                 SALARIED_GOVT    373646    24.474752      98.087392    24.474752      98.087392
-##                  SELFEMPLOYED     29199     1.912608     100.000000     1.912608     100.000000
-##                          &lt;NA&gt;         0                                 0.000000     100.000000
-##                         Total   1526659   100.000000     100.000000   100.000000     100.000000</code></pre>
-</div>
-<div id="numeric-variables" class="section level3" number="0.6.3">
-<h3><span class="header-section-number">0.6.3</span> Numeric
-variables</h3>
-<pre class="r"><code># numeric variable summaries
-train_joined_tbl %&gt;% select(where(is.numeric)) %&gt;% descr()</code></pre>
-<pre><code>## Descriptive Statistics  
-## train_joined_tbl  
-## N: 1526659  
-## 
-##                            age      case_id   mainoccupationinc_384A        MONTH      month.n
-## ----------------- ------------ ------------ ------------------------ ------------ ------------
-##              Mean        44.56   1286076.57                 57707.48    201936.29         6.43
-##           Std.Dev        14.03    718946.59                 33348.30        44.74         3.51
-##               Min        20.96         0.00                     0.00    201901.00         1.00
-##                Q1        32.74    766197.00                 36000.00    201906.00         3.00
-##            Median        42.81   1357358.00                 50000.00    201910.00         7.00
-##                Q3        56.20   1739023.00                 70000.00    202001.00         9.00
-##               Max        76.04   2703454.00                200000.00    202010.00        12.00
-##               MAD        16.72    721155.91                 29652.00         7.41         4.45
-##               IQR        23.46    972825.00                 34000.00        95.00         6.00
-##                CV         0.31         0.56                     0.58         0.00         0.55
-##          Skewness         0.27         0.14                     1.66         0.87        -0.05
-##       SE.Skewness         0.00         0.00                     0.00         0.00         0.00
-##          Kurtosis        -1.03        -0.59                     3.71        -1.22        -1.23
-##           N.Valid   1526659.00   1526659.00               1526659.00   1526659.00   1526659.00
-##         Pct.Valid       100.00       100.00                   100.00       100.00       100.00
-## 
-## Table: Table continues below
-## 
-##  
-## 
-##                     riskassesment_940T     WEEK_NUM       week.n       year.n
-## ----------------- -------------------- ------------ ------------ ------------
-##              Mean                 0.23        40.77        40.77      2019.30
-##           Std.Dev                 0.98        23.80        23.80         0.46
-##               Min                -3.67         0.00         0.00      2019.00
-##                Q1                -0.23        23.00        23.00      2019.00
-##            Median                 0.37        40.00        40.00      2019.00
-##                Q3                 0.97        55.00        55.00      2020.00
-##               Max                 2.12        91.00        91.00      2020.00
-##               MAD                 0.89        25.20        25.20         0.00
-##               IQR                 1.20        32.00        32.00         1.00
-##                CV                 4.32         0.58         0.58         0.00
-##          Skewness                -0.83         0.30         0.30         0.88
-##       SE.Skewness                 0.01         0.00         0.00         0.00
-##          Kurtosis                 0.25        -0.65        -0.65        -1.23
-##           N.Valid             53560.00   1526659.00   1526659.00   1526659.00
-##         Pct.Valid                 3.51       100.00       100.00       100.00</code></pre>
-</div>
-<div id="summary" class="section level3" number="0.6.4">
-<h3><span class="header-section-number">0.6.4</span> Summary</h3>
-<p>We see that <code>riskassesment_940T</code> has 96.5% missing entries
-so it may be best to leave it out for now.</p>
 </div>
 </div>
 
@@ -3456,12 +2314,4 @@ $(document).ready(function ()  {
 </script>
 
 </body>
-</html>
-
-
-     
-
-
-  </body>
-
 </html>
