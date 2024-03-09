@@ -135,8 +135,6 @@ DEPENDENCIES
   jekyll-seo-tag
   minima
   octokit
-  tzinfo (~> 1.2)
-  tzinfo-data
   webrick (~> 1.8)
 
 BUNDLED WITH
