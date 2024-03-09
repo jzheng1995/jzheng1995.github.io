@@ -12,8 +12,12 @@ baseurl: ""
 
 # add the following to _config.yml file
 github_username: jzheng1995
-
+scholar:
+  style: apa
+  bibliography: jz_articles.bib
 plugins:
 - jekyll-remote-theme # add this line to the plugins list if you already have one
 - jekyll-optional-front-matter
 - jekyll-feed
+- jekyll-scholar
+- jekyll/scholar
