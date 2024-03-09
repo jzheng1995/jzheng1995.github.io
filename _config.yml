@@ -8,7 +8,7 @@ description: >- # this means to ignore newlines until "baseurl:"
   This is Jason’s personal portfolio website with blogs, projects, and resume details.
 theme: minima
 url: https://jzheng1995.github.io
-baseurl: "/jekyll-github-actions"
+baseurl: ""
 
 # add the following to _config.yml file
 github_username: jzheng1995
