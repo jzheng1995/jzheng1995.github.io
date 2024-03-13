@@ -6,11 +6,11 @@ main:
     url: /about/
   - title: "Portfolio"
     url: /portfolio/  
-  - title: "Home credit"
-    url: /homecredit/
+  # - title: "Home credit"
+  #   url: /homecredit/
   # - title: "Sitemap"
   #   url: /sitemap/
   # - title: "Posts"
   #   url: /posts/
-  # - title: "Archive"
-  #   url: /archive/  
+  - title: "Collections"
+    url: /collection-archive/
