@@ -3,7 +3,7 @@ layout: splash-home
 hidden: true
 header:
   overlay_color: "#5e616c"
-  overlay_image: /assets/img/digitalart.png
+  overlay_image: /assets/img/background/digitalart.png
   actions:
     - label: "<i class='fa fa-book' aria-hidden='true'></i>  Read posts"
       url: "/posts/"
