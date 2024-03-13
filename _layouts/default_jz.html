@@ -1,0 +1,33 @@
+---
+---
+<!doctype html>
+<style>
+  article.page {
+    float: left;
+    width: 100%;
+}
+</style>
+
+<html lang="{{ site.locale | slice: 0,2 | default: "en" }}">
+  <head>
+    {% include head.html %}
+    {% include head/custom.html %}
+  </head>
+  <body>
+    {% include_cached skip-links.html %}
+    {% include_cached masthead.html %}
+
+      <div class="initial-content">
+      {{ content }}
+    </div>
+
+      <div id="footer" class="page__footer">
+      <footer>
+        {% include footer/custom.html %}
+        {% include_cached footer.html %}
+      </footer>
+    </div>
+     </body>
+ 
+
+</html>
