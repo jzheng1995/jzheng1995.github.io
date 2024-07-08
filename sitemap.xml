@@ -2,15 +2,19 @@
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
 <loc>https://jzheng1995.github.io/homecredit/01-home-credit-etl/</loc>
-<lastmod>2024-03-14T02:07:29+00:00</lastmod>
+<lastmod>2024-07-08T19:51:57+00:00</lastmod>
 </url>
 <url>
 <loc>https://jzheng1995.github.io/homecredit/02-preliminary-analysis/</loc>
-<lastmod>2024-03-14T02:07:29+00:00</lastmod>
+<lastmod>2024-07-08T19:51:57+00:00</lastmod>
 </url>
 <url>
 <loc>https://jzheng1995.github.io/2024/03/10/first-post/</loc>
 <lastmod>2024-03-10T00:00:00+00:00</lastmod>
+</url>
+<url>
+<loc>https://jzheng1995.github.io/2024/07/08/python-pipeline/</loc>
+<lastmod>2024-07-08T00:00:00+00:00</lastmod>
 </url>
 <url>
 <loc>https://jzheng1995.github.io/about/</loc>
