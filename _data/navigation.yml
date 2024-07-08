@@ -4,8 +4,8 @@ main:
     url: /year-archive/
   - title: "About"
     url: /about/
-  - title: "Portfolio"
-    url: /portfolio/  
+  - title: "Resume"
+    url: /resume/  
   # - title: "Home credit"
   #   url: /homecredit/
   # - title: "Sitemap"

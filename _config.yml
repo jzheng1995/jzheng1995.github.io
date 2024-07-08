@@ -330,10 +330,7 @@ defaults:
     values:
       layout: default_jz
       author_profile: false
-# collections:
-#   analyses:
-#   output: true
-#      
+# collections   
 
 collections:
   homecredit:

@@ -1,6 +1,6 @@
 ---
 title: ""
-permalink: /portfolio/
+permalink: /resume/
 ---
 
 # Data scientist
