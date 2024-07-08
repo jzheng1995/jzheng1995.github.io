@@ -318,14 +318,14 @@ defaults:
       author_profile: true
      # _homecredit
   - scope:
-      path: ""
+      path: "_homecredit"
       type: homecredit
     values:
       layout: default_jz
       author_profile: false
       # _python
   - scope:
-      path: ""
+      path: "_python"
       type: python
     values:
       layout: default_jz
