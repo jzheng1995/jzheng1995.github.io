@@ -336,6 +336,12 @@ defaults:
 #      
 
 collections:
-  homecredit:
-    output: true
-    permalink: /:collection/:path/
+# home credit
+  - homecredit:
+      output: true
+      permalink: /:collection/:path/
+# python 
+  - python:
+      output: true
+      permalink: /:collection/:path/
+

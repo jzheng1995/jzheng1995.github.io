@@ -1,5 +1,5 @@
 ---
-title: "Home Credit 01: ETL"
+title: "Python project 01: Pipelines"
 ---
 
-{% include 01-pipeline.html %}
+{% include OnlineSales_MLpipeline.html %}
