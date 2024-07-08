@@ -16,10 +16,4 @@ var store = [{
         "tags": [],
         "url": "/2024/03/10/first-post/",
         "teaser": null
-      },{
-        "title": "An exercise in pipelines with Python",
-        "excerpt":"&lt;!DOCTYPE html&gt; Popular Marketplace Dataset Popular Marketplace Dataset Jason 2024-07-08 In this notebook we’ll be exploring how to use data pipelines to set up a reasonable machine learning model. We’ll be using an Online Sales dataset from Kaggle and we’ll be examining what factors would lead to predicting the most...","categories": [],
-        "tags": [],
-        "url": "/2024/07/08/python-pipeline/",
-        "teaser": null
       }]
