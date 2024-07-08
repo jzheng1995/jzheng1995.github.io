@@ -2,4 +2,4 @@
 title: "Python project 01: Pipelines"
 ---
 
-{% include MLpipeline.html %}
+{% include 01-pipeline.html %}
