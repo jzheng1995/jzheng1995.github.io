@@ -323,6 +323,13 @@ defaults:
     values:
       layout: default_jz
       author_profile: false
+      # _python
+  - scope:
+      path: ""
+      type: python
+    values:
+      layout: default_jz
+      author_profile: false
 # collections:
 #   analyses:
 #   output: true
