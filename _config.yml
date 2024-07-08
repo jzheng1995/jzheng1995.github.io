@@ -339,6 +339,6 @@ collections:
   - homecredit:
       output: true
       permalink: /:collection/:path/
-  # - python:
-  #     output: true
-  #     permalink: /:collection/:path/
+  - python:
+      output: true
+      permalink: /:collection/:path/
