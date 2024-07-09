@@ -16,4 +16,10 @@ var store = [{
         "tags": [],
         "url": "/2024/03/10/first-post/",
         "teaser": null
+      },{
+        "title": "Python 01: Pipelines",
+        "excerpt":"OnlineSales_MLpipeline.knit In this notebook we’ll be exploring how to use data pipelines to set up a reasonable machine learning model. We’ll be using an Online Sales dataset from Kaggle and we’ll be examining what factors would lead to predicting the most revenue. We’ll start off with some library set ups...","categories": [],
+        "tags": [],
+        "url": "/python/01-pipeline/",
+        "teaser": null
       }]
