@@ -17,6 +17,14 @@ feature_row:
     url: "/about/"
     btn_class: "btn--primary"
     btn_label: "Learn more"
+    feature_row:
+  - image_path: /assets/img/misc/projects.jpeg
+    alt: "projects"
+    title: "Explore my projects"
+    excerpt: "Come explore my collection of exercises and projects."
+    url: "/collection-archive/"
+    btn_class: "btn--primary"
+    btn_label: "Learn more"
 ---
 
 {% include feature_row %}
