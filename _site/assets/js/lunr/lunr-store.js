@@ -12,8 +12,14 @@ var store = [{
         "teaser": null
       },{
         "title": "Python 01: Pipelines",
-        "excerpt":"OnlineSales_MLpipeline.knit In this notebook we’ll be exploring how to use data pipelines to set up a reasonable machine learning model. We’ll be using an Online Sales dataset from Kaggle and we’ll be examining what factors would lead to predicting the most revenue. We’ll start off with some library set ups...","categories": [],
+        "excerpt":"naive-pipeline.knit 1 Python pipelines In this notebook we’ll be exploring how to use data pipelines to set up a machine learning model. We’ll be using an Online Sales dataset from Kaggle and we’ll be examining what factors would lead to predicting the most revenue. Here’s the setup. import matplotlib as...","categories": [],
         "tags": [],
         "url": "/python/01-pipeline/",
+        "teaser": null
+      },{
+        "title": "Python 02: Tuning Random Forest models",
+        "excerpt":"rf-tuning.knit 1 Introduction to model tuning Since the random forest in my previous notebook did not appear to predict very well, let’s try some hyperparameter tuning. We’ll first set up with the pipeline from last time. 1.1 Setup import matplotlib as mpl import matplotlib.pyplot as plt import pandas as pd...","categories": [],
+        "tags": [],
+        "url": "/python/02-rf-tuning/",
         "teaser": null
       }]
