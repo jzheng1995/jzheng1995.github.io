@@ -25,6 +25,13 @@ feature_row:
     url: "/collection-archive/"
     btn_class: "btn--primary"
     btn_label: "Learn more"
+  - image_path: /assets/img/misc/churn.jpg
+    alt: "churn"
+    title: Bank Churn
+    excerpt: "Predicting Churn with bank data"
+    url: "https://github.com/jzheng1995/Bank-Churn"
+    btn_class: "btn--primary"
+    btn_label: "Learn more"
 ---
 
 {% include feature_row %}
