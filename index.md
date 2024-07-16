@@ -13,7 +13,7 @@ feature_row:
   - image_path: /assets/img/headshot.jpeg
     alt: "about"
     title: "Welcome to my website!"
-    excerpt: "My name is Jason Zheng and I have a background in statistics, psychology, and data science. This is where I share my projects, analyses, and ideas. Enjoy!"
+    excerpt: "My name is Jason Zheng and this is where I share my projects, analyses, and ideas. Enjoy!"
     url: "/about/"
     btn_class: "btn--primary"
     btn_label: "Learn more"
@@ -28,7 +28,7 @@ feature_row:
   - image_path: /assets/img/misc/churn.jpg
     alt: "churn"
     title: Bank Churn
-    excerpt: "Predicting Churn with bank data"
+    excerpt: "Predicting bank churn with machine learning."
     url: "https://github.com/jzheng1995/Bank-Churn"
     btn_class: "btn--primary"
     btn_label: "Learn more"
