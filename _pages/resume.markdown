@@ -9,7 +9,9 @@ permalink: /resume/
 Skilled researcher and statistician with 5+ years' of experience with inference, research design, and data modeling. Experienced in handling large longitudinal datasets for extraction, processing, and loading. Curious, independent, and professionally skilled at contributing to high functioning team environments.
 
 # Skills
-R, SQL, Python, Statistics, Machine learning, Date pipelines
+- Causal inference, mediation, A/B testing, hypothesis testing
+- Data analysis, statistical modeling, visualization, regression, ETL, classification
+- Proficient in R, Python, tidyverse, SQL; familiar with AWS, Tensorflow, Keras
 
 # Education 
 - M.A., Psychology \| The University of British Columbia (Sep 2021)		 			        		
