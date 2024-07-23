@@ -33,7 +33,7 @@ feature_row:
     btn_class: "btn--primary"
     btn_label: "Learn more"
 feature_row2:
-   - image_path: /assets/img/misc/handshake.jpg
+  - image_path: /assets/img/misc/handshake.jpg
     alt: "cross-sell"
     title: Insurance Cross Sell
     excerpt: "Predicting Insurance Cross Sell with machine learning."
@@ -43,3 +43,4 @@ feature_row2:
 ---
 
 {% include feature_row %}
+{% include feature_row id="feature_row2"  %}
