@@ -40,8 +40,8 @@ feature_row2:
     url: "https://github.com/jzheng1995/Insurance-Cross-Sell"
     btn_class: "btn--primary"
     btn_label: "Learn more"
-  - image_path: /assets/img/misc/homecredit.jpg
-    alt: "cross-sell"
+  - image_path: /assets/img/misc/homecredit.jpeg
+    alt: "home-credit"
     title: Home Credit
     excerpt: "SQL extraction and machine learning in R"
     url: "https://github.com/jzheng1995/Insurance-Cross-Sell"
