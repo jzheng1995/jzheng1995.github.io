@@ -11,6 +11,12 @@ var store = [{
         "url": "/2024/03/10/first-post/",
         "teaser": null
       },{
+        "title": "Qualtrics in R",
+        "excerpt":"Introduction - Qualtrics and R Are you working in R and use Qualtrics surveys? Have your fingers fallen off from downloading each Qualtrics survey individually? Well, you have come to the right place. And for those of you who don’t know what’s going on? Well, hello! You might be wondering...","categories": [],
+        "tags": [],
+        "url": "/2024/07/27/R-qualtrics/",
+        "teaser": null
+      },{
         "title": "Python 01: Pipelines",
         "excerpt":"naive-pipeline.knit 1 Python pipelines In this notebook we’ll be exploring how to use data pipelines to set up a machine learning model. We’ll be using an Online Sales dataset from Kaggle and we’ll be examining what factors would lead to predicting the most revenue. Here’s the setup. import matplotlib as...","categories": [],
         "tags": [],
