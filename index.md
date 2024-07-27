@@ -21,7 +21,7 @@ feature_row:
   - image_path: /assets/img/misc/projects.jpeg
     alt: "projects"
     title: "Explore my projects"
-    excerpt: "Come explore my collection of exercises and projects."
+    excerpt: "Come explore my collection of exercises."
     url: "/collection-archive/"
     btn_class: "btn--primary"
     btn_label: "Learn more"
@@ -39,7 +39,14 @@ feature_row2:
     excerpt: "Predicting Insurance Cross Sell with machine learning."
     url: "https://github.com/jzheng1995/Insurance-Cross-Sell"
     btn_class: "btn--primary"
-    btn_label: "Learn more"  
+    btn_label: "Learn more"
+  - image_path: /assets/img/misc/homecredit.jpg
+    alt: "cross-sell"
+    title: Home Credit
+    excerpt: "SQL extraction and machine learning in R"
+    url: "https://github.com/jzheng1995/Insurance-Cross-Sell"
+    btn_class: "btn--primary"
+    btn_label: "Learn more" 
 ---
 
 {% include feature_row %}
