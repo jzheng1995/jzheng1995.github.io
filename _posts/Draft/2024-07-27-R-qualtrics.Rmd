@@ -1,0 +1,82 @@
+---
+title: "Qualtrics in R"
+author: "Jason"
+output: 
+  html_document:
+    keep_md: true
+---
+
+## Introduction - Qualtrics and R
+
+Are you working in R and use Qualtrics surveys? Have your fingers fallen off from downloading each Qualtrics survey individually? Well, you have come to the right place.
+
+And for those of you who don't know what's going on? Well, hello! You might be wondering what this whole "Qualtrics" and "R" jazz is about. R is a programming language that's often used for statistical analysis. Qualtrics is a platform that allows users to design and collect survey data. Why do we want to mix the two?
+
+To work your statistical magic in R, you have to get down and dirty with data. But where do you get it from? You get the idea. If you have data in Qualtrics, they have a handy interface to download your collected survey data in its webpage navigation. 
+
+[![Qualtrics Manual Download](https://www.qualtrics.com/m/assets/support/wp-content/uploads//2015/04/exporting-responses-1.png)](https://www.qualtrics.com/support/survey-platform/data-and-analysis-module/data/download-data/export-data-overview/)
+
+You can fiddle with the options, hit download, and voila, you have your data. Now do that for every survey. Or in my case, some 36 surveys for a research study. 
+
+Now personally, I'd like to spare my carpal-tunneled hands the misery of repetitive downloads. And as it turns out, we can skip all that by interacting with the Qualtrics API! Instead of requesting each survey separately through the front page, we can ask for all the surveys in several lines of code. 
+
+## Overview
+
+Here's an overview of what we'll do. 
+
+```{r, message = F}
+library(DiagrammeR)
+library(tidyverse)
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = BT]
+  
+  node [shape = rectangle]        
+  rec1 [label = 'Objective: Data is ready']
+  rec2 [label = 'Needs code query']
+  rec3 [label =  'Needs QualtRics set up']
+  rec4 [label = 'Needs API token set up']
+  
+  rec1 -> rec2 -> rec3 -> rec4
+  }",
+  height = 400)
+```
+
+So this is how we'll approach it.
+
+```{r}
+DiagrammeR::grViz("digraph {
+  graph [layout = dot, rankdir = TB]
+  
+  node [shape = rectangle]        
+  rec1 [label = 'Objective: Data is ready']
+  rec2 [label = 'Step 3: Write some code']
+  rec3 [label =  'Step 2: Set up QualtRics']
+  rec4 [label = 'Step 1: Set up token key']
+  
+  rec4 -> rec3 -> rec2 -> rec1
+  }",
+  height = 400)
+```
+
+## Step 1: Qualtrics API token
+
+For my non-technical friends out there: think of Qualtrics as our house of data, and the Application Programming Interface (API) as their door. We can get our data if we knock on their door, but we have to prove we aren't strangers. That's where the API token comes in, it's our identification card!
+
+You can access the token generation page by clicking on account settings.
+[![account-settings](https://www.qualtrics.com/support/integrations/api-integration/overview/)](https://www.qualtrics.com/m/assets/support/wp-content/uploads//2015/04/account-settings-1.png)
+
+Once you're in the account settings, you can click on Qualtrics IDs and then generate token from there. 
+
+[![token](https://www.qualtrics.com/support/integrations/api-integration/overview/)](https://www.qualtrics.com/m/assets/support/wp-content/uploads//2021/05/generate-api-34.png)
+
+<span style="color:red">***Warning*** </span> If you don't see the token generation, it's likely that your account has restricted access. Please contact your IT crew or whoever manages the Qualtrics subscription to enable it for you. 
+
+[![token](https://www.qualtrics.com/support/integrations/api-integration/overview/)](https://www.qualtrics.com/m/assets/support/wp-content/uploads//2021/05/generate-api-34.png)
+
+Once you have successfully generated your token, keep it handy because we're going to use it soon! For more details on the API token, please see [Qualtrics' guide](https://www.qualtrics.com/support/integrations/api-integration/overview/)
+
+## Step 2: QualtRics
+
+As you can imagine, talking to an API ain't easy. You got to do some GET requests, learn it in R, learn about the particulars of Qualtrics' API. Luckily for us, there's a package called [QualtRics](https://github.com/ropensci/qualtRics) that's done the hard work for us. All we have to do is set up our API token from earlier and use their library commands. 
+
+TO BE CONTINUED!
