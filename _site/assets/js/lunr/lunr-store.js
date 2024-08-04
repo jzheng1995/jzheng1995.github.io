@@ -17,6 +17,12 @@ var store = [{
         "url": "/2024/03/10/first-post/",
         "teaser": null
       },{
+        "title": "Qualtrics in R",
+        "excerpt":"Introduction - Qualtrics and R Are you working in R and use Qualtrics surveys? Have your fingers fallen off from downloading each Qualtrics survey individually? Well, you have come to the right place. And for those of you who don’t know what’s going on? Well, hello! You might be wondering...","categories": [],
+        "tags": [],
+        "url": "/2024/07/27/R-qualtrics/",
+        "teaser": null
+      },{
         "title": "Building an image classifier",
         "excerpt":"Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier. The guide is mostly based off fast.ai’s chapter 2: Deployment and Dr. Tanishq’s blog. Several changes had to be made due to Gradio’s deprecation of several APIs. The deployed app follows through these...","categories": [],
         "tags": [],
