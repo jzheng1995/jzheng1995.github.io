@@ -9,8 +9,8 @@
   <head>
     <meta charset="utf-8">
 
-<!-- begin _includes/seo.html --><title>First post - Jason’s portal</title>
-<meta name="description" content="This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.">
+<!-- begin _includes/seo.html --><title>Building an image classifier - Jason’s portal</title>
+<meta name="description" content="Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier.">
 
 
   <meta name="author" content="Jason Zheng">
@@ -22,30 +22,30 @@
 <meta property="og:type" content="article">
 <meta property="og:locale" content="en_US">
 <meta property="og:site_name" content="Jason's portal">
-<meta property="og:title" content="First post">
-<meta property="og:url" content="http://localhost:4000/2024/03/10/first-post/">
+<meta property="og:title" content="Building an image classifier">
+<meta property="og:url" content="http://localhost:4000/2024/08/03/pet-identifier/">
 
 
-  <meta property="og:description" content="This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.">
-
-
-
-
-
-
-
-  <meta property="article:published_time" content="2024-03-10T00:00:00-08:00">
+  <meta property="og:description" content="Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier.">
 
 
 
 
 
-  
+
+
+  <meta property="article:published_time" content="2024-08-03T00:00:00-07:00">
+
+
+
+
 
   
 
+  
 
-<link rel="canonical" href="http://localhost:4000/2024/03/10/first-post/">
+
+<link rel="canonical" href="http://localhost:4000/2024/08/03/pet-identifier/">
 
 
 
@@ -287,16 +287,16 @@
 
 
   <article class="page h-entry" itemscope itemtype="https://schema.org/CreativeWork">
-    <meta itemprop="headline" content="First post">
-    <meta itemprop="description" content="This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.">
-    <meta itemprop="datePublished" content="2024-03-10T00:00:00-08:00">
+    <meta itemprop="headline" content="Building an image classifier">
+    <meta itemprop="description" content="Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier.">
+    <meta itemprop="datePublished" content="2024-08-03T00:00:00-07:00">
     
 
     <div class="page__inner-wrap">
       
         <header>
           <h1 id="page-title" class="page__title p-name" itemprop="headline">
-            <a href="http://localhost:4000/2024/03/10/first-post/" class="u-url" itemprop="url">First post
+            <a href="http://localhost:4000/2024/08/03/pet-identifier/" class="u-url" itemprop="url">Building an image classifier
 </a>
           </h1>
           
@@ -313,7 +313,7 @@
       <span class="page__meta-readtime">
         <i class="far fa-clock" aria-hidden="true"></i>
         
-          less than 1 minute read
+          2 minute read
         
       </span>
     
@@ -325,76 +325,49 @@
 
       <section class="page__content e-content" itemprop="text">
         
-        <p>This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.</p>
+        <p>Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier.</p>
 
-<h1 id="syntax">Syntax</h1>
+<p>The guide is mostly based off <a href="https://course.fast.ai/Lessons/lesson2.html">fast.ai’s chapter 2: Deployment</a> and <a href="https://www.tanishq.ai/blog/posts/2021-11-16-gradio-huggingface.html">Dr. Tanishq’s blog</a>. Several changes had to be made due to Gradio’s deprecation of several APIs.</p>
 
-<p>We can make headings!</p>
-
-<h1 id="heading-1">Heading 1</h1>
-<h2 id="heading-2">Heading 2</h2>
-<h3 id="heading-3">Heading 3</h3>
-<h4 id="heading-4">Heading 4</h4>
-
-<p>Text can be <strong>bold</strong>, <em>italicized</em>, or <strong><em>both</em></strong>.</p>
-
-<blockquote>
-  <p>We can also make block quotes.</p>
-</blockquote>
-
+<p>The deployed app follows through these steps:</p>
 <ol>
-  <li>Lists</li>
-  <li>Can be</li>
-  <li>Ordered</li>
+  <li>Training pet classifier model</li>
+  <li>Set up Hugging Faces space repository</li>
+  <li>Deploy</li>
 </ol>
 
-<ul>
-  <li>Lists</li>
-  <li>Can also be</li>
-  <li>Not ordered</li>
-</ul>
+<h2 id="model-training">Model training</h2>
 
-<p>We can upload pictures.
-<img src="/assets/img/cat_face.jpeg" alt="We can upload pictures" /></p>
+<p>Our model is based on a ResNet50 image classifier trained on Oxford Pets dataset.</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>We can make code blocks.
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from fastai.vision.all import *
+path = untar_data(URLs.PETS)
+dls = ImageDataLoaders.from_name_re(path, get_image_files(path/'images'), pat='(.+)_\d+.jpg', item_tfms=Resize(460), batch_tfms=aug_transforms(size=224, min_scale=0.75))
+learn = vision_learner(dls, models.resnet50, metrics=accuracy)
+learn.fine_tune(1)
+learn.path = Path('.')
+learn.export()
 </code></pre></div></div>
 
-<p><del>Strike through words.</del></p>
+<p>This code creates an export.pkl file. Files that end with .pkl are called pickle and represent preserved Python object. In our case, export.pkl represents our image classifier model.</p>
 
-<ul class="task-list">
-  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Complete a task list</li>
-  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Finish my analyses</li>
-  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Save the world</li>
-</ul>
+<h2 id="hugging-faces-space">Hugging Faces space</h2>
 
-<p>Unfortunately we have to use html tags to natively subscript<sub>2</sub>, superscript<sup>2</sup>, and <mark>highlight</mark>.</p>
+<p>The next step is to create a <a href="https://huggingface.co/">Hugging Faces</a> account. Create a <a href="https://huggingface.co/spaces">space</a>. From my understanding, a hugging space space acts as a repository for your app files and automatically deploys (launches the app) for you.</p>
 
-<p>We also have to use html to natively use 🙄 .</p>
+<p>For those of you who aren’t familiar with repositories, treat it like a file storage for your app file components. Once you place all your files in there, our deployment knows to look for files inside that repository to spin together your app. Another point to take note of is that not only do you have to define app files, you may also need to include the file dependencies (Python packages in this case) as well. This concept has to do with software development and reproducibility. To define these package dependencies, just simply include a requirements.txt file that names your package (and maybe version, I’ll come back to this later). In my case, I had to add <code class="language-plaintext highlighter-rouge">fastai</code> and <code class="language-plaintext highlighter-rouge">scikit-image</code>.</p>
 
-<table>
-  <thead>
-    <tr>
-      <th>We can</th>
-      <th>make tables</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>very</td>
-      <td>conveniently</td>
-    </tr>
-  </tbody>
-</table>
+<p>To see the files in my pet identifier app, check <a href="https://huggingface.co/spaces/jchzheng/catdog/tree/main">here</a>. While it may be more efficient to <a href="https://huggingface.co/docs/hub/en/repositories-getting-started">clone the repository</a> and work locally, I simply uploaded the files through the Hugging Face UI in my space repository (see below). Feel free to download the files in <a href="https://huggingface.co/spaces/jchzheng/catdog/tree/main">my repository</a> and upload to your own.</p>
 
-<p>We can use a sentence with a footnote. <sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote" rel="footnote">1</a></sup></p>
-<div class="footnotes" role="doc-endnotes">
-  <ol>
-    <li id="fn:1" role="doc-endnote">
-      <p>This is the footnote. <a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
-    </li>
-  </ol>
-</div>
+<p><img src="https://cdn-lfs.huggingface.co/datasets/huggingface/documentation-images/cec7a1aa3f1fb1c517f0e6f1f32e68a0428fb63c8d79af5a5382146929c18d28?response-content-disposition=inline%3B+filename*%3DUTF-8%27%27upload_files.png%3B+filename%3D%22upload_files.png%22%3B&amp;response-content-type=image%2Fpng&amp;Expires=1722993359&amp;Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTcyMjk5MzM1OX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2RuLWxmcy5odWdnaW5nZmFjZS5jby9kYXRhc2V0cy9odWdnaW5nZmFjZS9kb2N1bWVudGF0aW9uLWltYWdlcy9jZWM3YTFhYTNmMWZiMWM1MTdmMGU2ZjFmMzJlNjhhMDQyOGZiNjNjOGQ3OWFmNWE1MzgyMTQ2OTI5YzE4ZDI4P3Jlc3BvbnNlLWNvbnRlbnQtZGlzcG9zaXRpb249KiZyZXNwb25zZS1jb250ZW50LXR5cGU9KiJ9XX0_&amp;Signature=XTYvM-1uXY1cs6P-ixK9m%7Eiqi67617m8pI0MYOie-4NG2ur2V4iGB0iE0GKfjEDje8i%7Edr3GCSJoFaExMB2W%7EwvVDuVriMHSe9ZM2BqPlxVUbFddC9SdKbkkwU7EIHlDz08ScBjO3uWqEMGtFaZBC20WigaIq3SwFGXrkoVgnoJskpr8S5HTJXCW1YoR-VfpfH3cVFBKnCucotxCeW3alKf%7EiCtjhGOlHitOJzaq%7EvMvFLksclDCLvAaLjMIo9q2WhU5NVqdVb%7EauMeRQqBC2AeuCnqrEw-2-EniZMlqmPo6hbyLGrdC-CQbPoZ3bO2NCkUlTvxWSnOwaFQ%7Egmyn4Q__&amp;Key-Pair-Id=K3ESJI6DHPFC7" alt=" Hugging Space upload" /></p>
+
+<h2 id="deployment">Deployment</h2>
+
+<p>Gradio provides API interfaces for our app. Gradio allows us to conveniently set up ways for users to upload their own images and see a prediction output. Several API interfaces were deprecated in the 2024 version from the guides I used. Specifically, <code class="language-plaintext highlighter-rouge">gr.inputs.Image(shape=(512, 512)</code> had to be changed to <code class="language-plaintext highlighter-rouge">gr.Image(type = 'pil')</code>, <code class="language-plaintext highlighter-rouge">gr.outputs.Label(num_top_classes=3)</code> changed to <code class="language-plaintext highlighter-rouge">gr.Label(num_top_classes=3)</code>, and <code class="language-plaintext highlighter-rouge">interpretation</code>, <code class="language-plaintext highlighter-rouge">enable_queue</code> were deprecated and were not longer valid arguments. By the time you read this post Gradio may have changed its API again. You can likely fix deployment issues by using an older Gradio version (requirements.txt) or referring to <a href="https://www.gradio.app/docs/gradio/interface">updated documentation</a>. The space will automatically try to launch your app everytime you commit (save) your changes.</p>
+
+<h2 id="summary">Summary</h2>
+
+<p>This was an overview of how to deploy an image classifier using Hugging Face and Gradio. You can view <a href="/Pet_Identifier/">my demo here</a>. Feel free to contact me for questions and feedback!</p>
 
         
       </section>
@@ -406,7 +379,7 @@
 
         
 
-  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time class="dt-published" datetime="2024-03-10T00:00:00-08:00">March 10, 2024</time></p>
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time class="dt-published" datetime="2024-08-03T00:00:00-07:00">August 3, 2024</time></p>
 
       </footer>
 
@@ -415,22 +388,22 @@
     <h4 class="page__share-title">Share on</h4>
   
 
-  <a href="https://twitter.com/intent/tweet?text=First+post%20http%3A%2F%2Flocalhost%3A4000%2F2024%2F03%2F10%2Ffirst-post%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fab fa-fw fa-twitter" aria-hidden="true"></i><span> Twitter</span></a>
+  <a href="https://twitter.com/intent/tweet?text=Building+an+image+classifier%20http%3A%2F%2Flocalhost%3A4000%2F2024%2F08%2F03%2Fpet-identifier%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fab fa-fw fa-twitter" aria-hidden="true"></i><span> Twitter</span></a>
 
-  <a href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Flocalhost%3A4000%2F2024%2F03%2F10%2Ffirst-post%2F" class="btn btn--facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook"><i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span></a>
+  <a href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Flocalhost%3A4000%2F2024%2F08%2F03%2Fpet-identifier%2F" class="btn btn--facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook"><i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span></a>
 
-  <a href="https://www.linkedin.com/shareArticle?mini=true&url=http%3A%2F%2Flocalhost%3A4000%2F2024%2F03%2F10%2Ffirst-post%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=http%3A%2F%2Flocalhost%3A4000%2F2024%2F08%2F03%2Fpet-identifier%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
 </section>
 
 
       
   <nav class="pagination">
     
-      <a href="#" class="pagination--pager disabled">Previous</a>
+      <a href="/2024/03/10/first-post/" class="pagination--pager" title="First post
+">Previous</a>
     
     
-      <a href="/2024/08/03/pet-identifier/" class="pagination--pager" title="Building an image classifier
-">Next</a>
+      <a href="#" class="pagination--pager disabled">Next</a>
     
   </nav>
 
@@ -454,7 +427,7 @@
     
     <h2 class="archive__item-title no_toc" itemprop="headline">
       
-        <a href="/2024/08/03/pet-identifier/" rel="permalink">Building an image classifier
+        <a href="/2024/03/10/first-post/" rel="permalink">First post
 </a>
       
     </h2>
@@ -472,14 +445,14 @@
       <span class="page__meta-readtime">
         <i class="far fa-clock" aria-hidden="true"></i>
         
-          2 minute read
+          less than 1 minute read
         
       </span>
     
   </p>
 
 
-    <p class="archive__item-excerpt" itemprop="description">Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier.
+    <p class="archive__item-excerpt" itemprop="description">This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.
 </p>
   </article>
 </div>

@@ -21,7 +21,7 @@ feature_row:
   - image_path: /assets/img/misc/pets.jpeg
     alt: "pets"
     title: "Pet Identifier"
-    excerpt: "Identify your pet breed!"
+    excerpt: "Breed identifier for pets! Deployed with Hugging Face and Gradio."
     url: "/Pet_Identifier/"
     btn_class: "btn--primary"
     btn_label: "See Demo"
