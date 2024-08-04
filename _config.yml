@@ -342,3 +342,7 @@ collections:
   python:
     output: true
     permalink: /:collection/:path/
+  deeplearning:
+    output: true
+    permalink: /:collection/:path/
+    

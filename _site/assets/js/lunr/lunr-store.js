@@ -1,4 +1,10 @@
 var store = [{
+        "title": "Pet Identifier",
+        "excerpt":"   ","categories": [],
+        "tags": [],
+        "url": "/Pet_Identifier/",
+        "teaser": null
+      },{
         "title": "Home Credit 01: ETL",
         "excerpt":"2024-03-11-home_credit_ETL.knit Code Show All Code Hide All Code 0.1 Introduction This is primarily an ETL document for the 2024 home credit competition data on Kaggle. This will also be a first attempt at 1) a kaggle competition, 2) approaching this dataset, and 3) documenting the bottom-up process for public review....","categories": [],
         "tags": [],

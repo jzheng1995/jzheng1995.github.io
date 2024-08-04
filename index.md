@@ -18,17 +18,17 @@ feature_row:
     btn_class: "btn--primary"
     btn_label: "Learn more"
     feature_row:
-  - image_path: /assets/img/misc/projects.jpeg
-    alt: "projects"
-    title: "Explore my projects"
-    excerpt: "Come explore my collection of exercises."
-    url: "/collection-archive/"
+  - image_path: /assets/img/misc/pets.jpeg
+    alt: "pets"
+    title: "Pet Identifier"
+    excerpt: "Identify your pet breed!"
+    url: "/Pet_Identifier/"
     btn_class: "btn--primary"
-    btn_label: "Learn more"
+    btn_label: "See Demo"
   - image_path: /assets/img/misc/churn.jpg
     alt: "churn"
     title: Bank Churn
-    excerpt: "Predicting bank churn with machine learning."
+    excerpt: "Predicting bank churn using Python and Scikit-learn."
     url: "https://github.com/jzheng1995/Bank-Churn"
     btn_class: "btn--primary"
     btn_label: "Learn more"
@@ -36,7 +36,7 @@ feature_row2:
   - image_path: /assets/img/misc/handshake.jpg
     alt: "cross-sell"
     title: Insurance Cross Sell
-    excerpt: "Predicting Insurance Cross Sell with machine learning."
+    excerpt: "Predicting Insurance Cross Sell with Bayesian Optimization."
     url: "https://github.com/jzheng1995/Insurance-Cross-Sell"
     btn_class: "btn--primary"
     btn_label: "Learn more"
