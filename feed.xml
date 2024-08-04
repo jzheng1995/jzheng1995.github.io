@@ -1,4 +1,46 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="https://jzheng1995.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://jzheng1995.github.io/" rel="alternate" type="text/html" /><updated>2024-08-04T00:18:56+00:00</updated><id>https://jzheng1995.github.io/feed.xml</id><title type="html">Jason’s portal</title><subtitle>This is Jason&apos;s personal website with projects, blogs, and portfolio.</subtitle><author><name>Jason Zheng</name><email>jzheng1995@gmail.com</email></author><entry><title type="html">First post</title><link href="https://jzheng1995.github.io/2024/03/10/first-post/" rel="alternate" type="text/html" title="First post" /><published>2024-03-10T00:00:00+00:00</published><updated>2024-03-10T00:00:00+00:00</updated><id>https://jzheng1995.github.io/2024/03/10/first-post</id><content type="html" xml:base="https://jzheng1995.github.io/2024/03/10/first-post/"><![CDATA[<p>This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.</p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="https://jzheng1995.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://jzheng1995.github.io/" rel="alternate" type="text/html" /><updated>2024-08-04T01:30:55+00:00</updated><id>https://jzheng1995.github.io/feed.xml</id><title type="html">Jason’s portal</title><subtitle>This is Jason&apos;s personal website with projects, blogs, and portfolio.</subtitle><author><name>Jason Zheng</name><email>jzheng1995@gmail.com</email></author><entry><title type="html">Building an image classifier</title><link href="https://jzheng1995.github.io/2024/08/03/pet-identifier/" rel="alternate" type="text/html" title="Building an image classifier" /><published>2024-08-03T00:00:00+00:00</published><updated>2024-08-03T00:00:00+00:00</updated><id>https://jzheng1995.github.io/2024/08/03/pet-identifier</id><content type="html" xml:base="https://jzheng1995.github.io/2024/08/03/pet-identifier/"><![CDATA[<p>Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier.</p>
+
+<p>The guide is mostly based off <a href="https://course.fast.ai/Lessons/lesson2.html">fast.ai’s chapter 2: Deployment</a> and <a href="https://www.tanishq.ai/blog/posts/2021-11-16-gradio-huggingface.html">Dr. Tanishq’s blog</a>. Several changes had to be made due to Gradio’s deprecation of several APIs.</p>
+
+<p>The deployed app follows through these steps:</p>
+<ol>
+  <li>Training pet classifier model</li>
+  <li>Set up Hugging Faces space repository</li>
+  <li>Deploy</li>
+</ol>
+
+<h2 id="model-training">Model training</h2>
+
+<p>Our model is based on a ResNet50 image classifier trained on Oxford Pets dataset.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from fastai.vision.all import *
+path = untar_data(URLs.PETS)
+dls = ImageDataLoaders.from_name_re(path, get_image_files(path/'images'), pat='(.+)_\d+.jpg', item_tfms=Resize(460), batch_tfms=aug_transforms(size=224, min_scale=0.75))
+learn = vision_learner(dls, models.resnet50, metrics=accuracy)
+learn.fine_tune(1)
+learn.path = Path('.')
+learn.export()
+</code></pre></div></div>
+
+<p>This code creates an export.pkl file. Files that end with .pkl are called pickle and represent preserved Python object. In our case, export.pkl represents our image classifier model.</p>
+
+<h2 id="hugging-faces-space">Hugging Faces space</h2>
+
+<p>The next step is to create a <a href="https://huggingface.co/">Hugging Faces</a> account. Create a <a href="https://huggingface.co/spaces">space</a>. From my understanding, a hugging space space acts as a repository for your app files and automatically deploys (launches the app) for you.</p>
+
+<p>For those of you who aren’t familiar with repositories, treat it like a file storage for your app file components. Once you place all your files in there, our deployment knows to look for files inside that repository to spin together your app. Another point to take note of is that not only do you have to define app files, you may also need to include the file dependencies (Python packages in this case) as well. This concept has to do with software development and reproducibility. To define these package dependencies, just simply include a requirements.txt file that names your package (and maybe version, I’ll come back to this later). In my case, I had to add <code class="language-plaintext highlighter-rouge">fastai</code> and <code class="language-plaintext highlighter-rouge">scikit-image</code>.</p>
+
+<p>To see the files in my pet identifier app, check <a href="https://huggingface.co/spaces/jchzheng/catdog/tree/main">here</a>. While it may be more efficient to <a href="https://huggingface.co/docs/hub/en/repositories-getting-started">clone the repository</a> and work locally, I simply uploaded the files through the Hugging Face UI in my space repository (see below). Feel free to download the files in <a href="https://huggingface.co/spaces/jchzheng/catdog/tree/main">my repository</a> and upload to your own.</p>
+
+<p><img src="https://cdn-lfs.huggingface.co/datasets/huggingface/documentation-images/cec7a1aa3f1fb1c517f0e6f1f32e68a0428fb63c8d79af5a5382146929c18d28?response-content-disposition=inline%3B+filename*%3DUTF-8%27%27upload_files.png%3B+filename%3D%22upload_files.png%22%3B&amp;response-content-type=image%2Fpng&amp;Expires=1722993359&amp;Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTcyMjk5MzM1OX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2RuLWxmcy5odWdnaW5nZmFjZS5jby9kYXRhc2V0cy9odWdnaW5nZmFjZS9kb2N1bWVudGF0aW9uLWltYWdlcy9jZWM3YTFhYTNmMWZiMWM1MTdmMGU2ZjFmMzJlNjhhMDQyOGZiNjNjOGQ3OWFmNWE1MzgyMTQ2OTI5YzE4ZDI4P3Jlc3BvbnNlLWNvbnRlbnQtZGlzcG9zaXRpb249KiZyZXNwb25zZS1jb250ZW50LXR5cGU9KiJ9XX0_&amp;Signature=XTYvM-1uXY1cs6P-ixK9m%7Eiqi67617m8pI0MYOie-4NG2ur2V4iGB0iE0GKfjEDje8i%7Edr3GCSJoFaExMB2W%7EwvVDuVriMHSe9ZM2BqPlxVUbFddC9SdKbkkwU7EIHlDz08ScBjO3uWqEMGtFaZBC20WigaIq3SwFGXrkoVgnoJskpr8S5HTJXCW1YoR-VfpfH3cVFBKnCucotxCeW3alKf%7EiCtjhGOlHitOJzaq%7EvMvFLksclDCLvAaLjMIo9q2WhU5NVqdVb%7EauMeRQqBC2AeuCnqrEw-2-EniZMlqmPo6hbyLGrdC-CQbPoZ3bO2NCkUlTvxWSnOwaFQ%7Egmyn4Q__&amp;Key-Pair-Id=K3ESJI6DHPFC7" alt=" Hugging Space upload" /></p>
+
+<h2 id="deployment">Deployment</h2>
+
+<p>Gradio provides API interfaces for our app. Gradio allows us to conveniently set up ways for users to upload their own images and see a prediction output. Several API interfaces were deprecated in the 2024 version from the guides I used. Specifically, <code class="language-plaintext highlighter-rouge">gr.inputs.Image(shape=(512, 512)</code> had to be changed to <code class="language-plaintext highlighter-rouge">gr.Image(type = 'pil')</code>, <code class="language-plaintext highlighter-rouge">gr.outputs.Label(num_top_classes=3)</code> changed to <code class="language-plaintext highlighter-rouge">gr.Label(num_top_classes=3)</code>, and <code class="language-plaintext highlighter-rouge">interpretation</code>, <code class="language-plaintext highlighter-rouge">enable_queue</code> were deprecated and were not longer valid arguments. By the time you read this post Gradio may have changed its API again. You can likely fix deployment issues by using an older Gradio version (requirements.txt) or referring to <a href="https://www.gradio.app/docs/gradio/interface">updated documentation</a>. The space will automatically try to launch your app everytime you commit (save) your changes.</p>
+
+<h2 id="summary">Summary</h2>
+
+<p>This was an overview of how to deploy an image classifier using Hugging Face and Gradio. You can view <a href="/Pet_Identifier/">my demo here</a>. Feel free to contact me for questions and feedback!</p>]]></content><author><name>Jason Zheng</name><email>jzheng1995@gmail.com</email></author><summary type="html"><![CDATA[Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier.]]></summary></entry><entry><title type="html">First post</title><link href="https://jzheng1995.github.io/2024/03/10/first-post/" rel="alternate" type="text/html" title="First post" /><published>2024-03-10T00:00:00+00:00</published><updated>2024-03-10T00:00:00+00:00</updated><id>https://jzheng1995.github.io/2024/03/10/first-post</id><content type="html" xml:base="https://jzheng1995.github.io/2024/03/10/first-post/"><![CDATA[<p>This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.</p>
 
 <h1 id="syntax">Syntax</h1>
 

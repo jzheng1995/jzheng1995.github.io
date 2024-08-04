@@ -17,6 +17,12 @@ var store = [{
         "url": "/2024/03/10/first-post/",
         "teaser": null
       },{
+        "title": "Building an image classifier",
+        "excerpt":"Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier. The guide is mostly based off fast.ai’s chapter 2: Deployment and Dr. Tanishq’s blog. Several changes had to be made due to Gradio’s deprecation of several APIs. The deployed app follows through these...","categories": [],
+        "tags": [],
+        "url": "/2024/08/03/pet-identifier/",
+        "teaser": null
+      },{
         "title": "Python 01: Pipelines",
         "excerpt":"naive-pipeline.knit 1 Python pipelines In this notebook we’ll be exploring how to use data pipelines to set up a machine learning model. We’ll be using an Online Sales dataset from Kaggle and we’ll be examining what factors would lead to predicting the most revenue. Here’s the setup. import matplotlib as...","categories": [],
         "tags": [],
