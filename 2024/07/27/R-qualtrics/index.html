@@ -9,43 +9,38 @@
   <head>
     <meta charset="utf-8">
 
-<!-- begin _includes/seo.html --><title>First post - Jason’s portal</title>
-<meta name="description" content="This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.">
+<!-- begin _includes/seo.html --><title>Qualtrics in R - Jason’s portal</title>
+<meta name="description" content="Introduction - Qualtrics and R">
 
-
-  <meta name="author" content="Jason Zheng">
-  
-  <meta property="article:author" content="Jason Zheng">
-  
 
 
 <meta property="og:type" content="article">
 <meta property="og:locale" content="en_US">
 <meta property="og:site_name" content="Jason's portal">
-<meta property="og:title" content="First post">
-<meta property="og:url" content="https://jzheng1995.github.io/2024/03/10/first-post/">
+<meta property="og:title" content="Qualtrics in R">
+<meta property="og:url" content="https://jzheng1995.github.io/2024/07/27/R-qualtrics/">
 
 
-  <meta property="og:description" content="This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.">
-
-
-
-
-
-
-
-  <meta property="article:published_time" content="2024-03-10T00:00:00+00:00">
+  <meta property="og:description" content="Introduction - Qualtrics and R">
 
 
 
 
 
-  
+
+
+  <meta property="article:published_time" content="2024-07-27T00:00:00+00:00">
+
+
+
+
 
   
 
+  
 
-<link rel="canonical" href="https://jzheng1995.github.io/2024/03/10/first-post/">
+
+<link rel="canonical" href="https://jzheng1995.github.io/2024/07/27/R-qualtrics/">
 
 
 
@@ -167,22 +162,11 @@
 <div itemscope itemtype="https://schema.org/Person" class="h-card">
 
   
-    <div class="author__avatar">
-      <a href="https://jzheng1995.github.io/">
-        <img src="/assets/img/headshot_circle.png" alt="Jason Zheng" itemprop="image" class="u-photo">
-      </a>
-    </div>
-  
 
   <div class="author__content">
     <h3 class="author__name p-name" itemprop="name">
-      <a class="u-url" rel="me" href="https://jzheng1995.github.io/" itemprop="url">Jason Zheng</a>
+      <a class="u-url" rel="me" href="https://jzheng1995.github.io/" itemprop="url"></a>
     </h3>
-    
-      <div class="author__bio p-note" itemprop="description">
-        <p>Data consumer.</p>
-
-      </div>
     
   </div>
 
@@ -190,40 +174,11 @@
     <button class="btn btn--inverse">Follow</button>
     <ul class="author__urls social-icons">
       
-        <li itemprop="homeLocation" itemscope itemtype="https://schema.org/Place">
-          <i class="fas fa-fw fa-map-marker-alt" aria-hidden="true"></i> <span itemprop="name" class="p-locality">Vancouver, BC</span>
-        </li>
-      
-
-      
-        
-          
-        
-          
-            <li><a href="https://jzheng1995.github.io" rel="nofollow noopener noreferrer me" itemprop="sameAs"><i class="fas fa-fw fa-link" aria-hidden="true"></i><span class="label">Website</span></a></li>
-          
-        
-          
-            <li><a href="https://github.com/jzheng1995" rel="nofollow noopener noreferrer me" itemprop="sameAs"><i class="fab fa-fw fa-github" aria-hidden="true"></i><span class="label">GitHub</span></a></li>
-          
-        
-          
-        
-          
-        
-          
-        
-      
 
       
 
       
-        <li>
-          <a href="mailto:jzheng1995@gmail.com" rel="me" class="u-email">
-            <meta itemprop="email" content="jzheng1995@gmail.com" />
-            <i class="fas fa-fw fa-envelope-square" aria-hidden="true"></i><span class="label">Email</span>
-          </a>
-        </li>
+
       
 
       
@@ -287,16 +242,16 @@
 
 
   <article class="page h-entry" itemscope itemtype="https://schema.org/CreativeWork">
-    <meta itemprop="headline" content="First post">
-    <meta itemprop="description" content="This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.">
-    <meta itemprop="datePublished" content="2024-03-10T00:00:00+00:00">
+    <meta itemprop="headline" content="Qualtrics in R">
+    <meta itemprop="description" content="Introduction - Qualtrics and R">
+    <meta itemprop="datePublished" content="2024-07-27T00:00:00+00:00">
     
 
     <div class="page__inner-wrap">
       
         <header>
           <h1 id="page-title" class="page__title p-name" itemprop="headline">
-            <a href="https://jzheng1995.github.io/2024/03/10/first-post/" class="u-url" itemprop="url">First post
+            <a href="https://jzheng1995.github.io/2024/07/27/R-qualtrics/" class="u-url" itemprop="url">Qualtrics in R
 </a>
           </h1>
           
@@ -313,7 +268,7 @@
       <span class="page__meta-readtime">
         <i class="far fa-clock" aria-hidden="true"></i>
         
-          less than 1 minute read
+          2 minute read
         
       </span>
     
@@ -325,76 +280,51 @@
 
       <section class="page__content e-content" itemprop="text">
         
-        <p>This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.</p>
+        <h2 id="introduction---qualtrics-and-r">Introduction - Qualtrics and R</h2>
 
-<h1 id="syntax">Syntax</h1>
+<p>Are you working in R and use Qualtrics surveys? Have your fingers fallen off from downloading each Qualtrics survey individually? Well, you have come to the right place.</p>
 
-<p>We can make headings!</p>
+<p>And for those of you who don’t know what’s going on? Well, hello! You might be wondering what this whole “Qualtrics” and “R” jazz is about. R is a programming language that’s often used for statistical analysis. Qualtrics is a platform that allows users to design and collect survey data. Why do we want to mix the two?</p>
 
-<h1 id="heading-1">Heading 1</h1>
-<h2 id="heading-2">Heading 2</h2>
-<h3 id="heading-3">Heading 3</h3>
-<h4 id="heading-4">Heading 4</h4>
+<p>To work your statistical magic in R, you have to get down and dirty with data. But where do you get it from? You get the idea. If you have data in Qualtrics, they have a handy interface to download your collected survey data in its webpage navigation.</p>
 
-<p>Text can be <strong>bold</strong>, <em>italicized</em>, or <strong><em>both</em></strong>.</p>
+<p><a href="https://www.qualtrics.com/support/survey-platform/data-and-analysis-module/data/download-data/export-data-overview/"><img src="https://www.qualtrics.com/m/assets/support/wp-content/uploads//2015/04/exporting-responses-1.png" alt="Qualtrics Manual Download" /></a></p>
 
-<blockquote>
-  <p>We can also make block quotes.</p>
-</blockquote>
+<p>You can fiddle with the options, hit download, and voila, you have your data. Now do that for every survey. Or in my case, some 36 surveys for a research study.</p>
 
-<ol>
-  <li>Lists</li>
-  <li>Can be</li>
-  <li>Ordered</li>
-</ol>
+<p>Now personally, I’d like to spare my carpal-tunneled hands the misery of repetitive downloads. And as it turns out, we can skip all that by interacting with the Qualtrics API! Instead of requesting each survey separately through the front page, we can ask for all the surveys in several lines of code.</p>
 
-<ul>
-  <li>Lists</li>
-  <li>Can also be</li>
-  <li>Not ordered</li>
-</ul>
+<h2 id="overview">Overview</h2>
 
-<p>We can upload pictures.
-<img src="/assets/img/cat_face.jpeg" alt="We can upload pictures" /></p>
+<p>Here’s an overview of our requirements.</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>We can make code blocks.
-</code></pre></div></div>
+<p><img src="/assets/posts/Qualtrics/grapha.png" alt="overview-plan" /></p>
 
-<p><del>Strike through words.</del></p>
+<p>So this is how we’ll approach it.</p>
 
-<ul class="task-list">
-  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Complete a task list</li>
-  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Finish my analyses</li>
-  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Save the world</li>
-</ul>
+<p><img src="/assets/posts/Qualtrics/graphb.png" alt="overview-plan" /></p>
 
-<p>Unfortunately we have to use html tags to natively subscript<sub>2</sub>, superscript<sup>2</sup>, and <mark>highlight</mark>.</p>
+<h2 id="step-1-qualtrics-api-token">Step 1: Qualtrics API token</h2>
 
-<p>We also have to use html to natively use 🙄 .</p>
+<p>For my non-technical friends out there: think of Qualtrics as our house of data, and the Application Programming Interface (API) as their door. We can get our data if we knock on their door, but we have to prove we aren’t strangers. That’s where the API token comes in, it’s our identification card!</p>
 
-<table>
-  <thead>
-    <tr>
-      <th>We can</th>
-      <th>make tables</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>very</td>
-      <td>conveniently</td>
-    </tr>
-  </tbody>
-</table>
+<p>You can access the token generation page by clicking on account settings.</p>
 
-<p>We can use a sentence with a footnote. <sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote" rel="footnote">1</a></sup></p>
-<div class="footnotes" role="doc-endnotes">
-  <ol>
-    <li id="fn:1" role="doc-endnote">
-      <p>This is the footnote. <a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
-    </li>
-  </ol>
-</div>
+<p><img src="https://www.qualtrics.com/m/assets/support/wp-content/uploads/2015/04/account-settings-1.png" alt="account-settings" /></p>
+
+<p>Once you’re in the account settings, you can click on Qualtrics IDs and then generate token from there.</p>
+
+<p><img src="https://www.qualtrics.com/m/assets/support/wp-content/uploads/2021/05/generate-api-34.png" alt="generate-token" /></p>
+
+<p><span style="color:red"><strong><em>Warning</em></strong> </span> If you don’t see the token generation, it’s likely that your account has restricted access. Please contact your IT crew or whoever manages the Qualtrics subscription to enable it for you.</p>
+
+<p>Once you have successfully generated your token, keep it handy because we’re going to use it soon! For more details on the API token, please see <a href="https://www.qualtrics.com/support/integrations/api-integration/overview/">Qualtrics’ guide</a></p>
+
+<h2 id="step-2-qualtrics">Step 2: QualtRics</h2>
+
+<p>As you can imagine, talking to an API ain’t easy. You got to do some GET requests, learn it in R, learn about the particulars of Qualtrics’ API. Luckily for us, there’s a package called <a href="https://github.com/ropensci/qualtRics">QualtRics</a> that has done most of the heavy lifting. All we have to do is set up our API token from earlier and use their library commands.</p>
+
+<h2 id="under-construction">UNDER CONSTRUCTION</h2>
 
         
       </section>
@@ -406,7 +336,7 @@
 
         
 
-  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time class="dt-published" datetime="2024-03-10T00:00:00+00:00">March 10, 2024</time></p>
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time class="dt-published" datetime="2024-07-27T00:00:00+00:00">July 27, 2024</time></p>
 
       </footer>
 
@@ -415,21 +345,22 @@
     <h4 class="page__share-title">Share on</h4>
   
 
-  <a href="https://twitter.com/intent/tweet?text=First+post%20https%3A%2F%2Fjzheng1995.github.io%2F2024%2F03%2F10%2Ffirst-post%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fab fa-fw fa-twitter" aria-hidden="true"></i><span> Twitter</span></a>
+  <a href="https://twitter.com/intent/tweet?text=Qualtrics+in+R%20https%3A%2F%2Fjzheng1995.github.io%2F2024%2F07%2F27%2FR-qualtrics%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fab fa-fw fa-twitter" aria-hidden="true"></i><span> Twitter</span></a>
 
-  <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fjzheng1995.github.io%2F2024%2F03%2F10%2Ffirst-post%2F" class="btn btn--facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook"><i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span></a>
+  <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fjzheng1995.github.io%2F2024%2F07%2F27%2FR-qualtrics%2F" class="btn btn--facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook"><i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span></a>
 
-  <a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fjzheng1995.github.io%2F2024%2F03%2F10%2Ffirst-post%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=https%3A%2F%2Fjzheng1995.github.io%2F2024%2F07%2F27%2FR-qualtrics%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
 </section>
 
 
       
   <nav class="pagination">
     
-      <a href="#" class="pagination--pager disabled">Previous</a>
+      <a href="/2024/03/10/first-post/" class="pagination--pager" title="First post
+">Previous</a>
     
     
-      <a href="/2024/07/27/R-qualtrics/" class="pagination--pager" title="Qualtrics in R
+      <a href="/2024/08/03/pet-identifier/" class="pagination--pager" title="Building an image classifier
 ">Next</a>
     
   </nav>
@@ -494,7 +425,7 @@
     
     <h2 class="archive__item-title no_toc" itemprop="headline">
       
-        <a href="/2024/07/27/R-qualtrics/" rel="permalink">Qualtrics in R
+        <a href="/2024/03/10/first-post/" rel="permalink">First post
 </a>
       
     </h2>
@@ -512,14 +443,14 @@
       <span class="page__meta-readtime">
         <i class="far fa-clock" aria-hidden="true"></i>
         
-          2 minute read
+          less than 1 minute read
         
       </span>
     
   </p>
 
 
-    <p class="archive__item-excerpt" itemprop="description">Introduction - Qualtrics and R
+    <p class="archive__item-excerpt" itemprop="description">This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.
 </p>
   </article>
 </div>
