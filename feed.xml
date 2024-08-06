@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="https://jzheng1995.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://jzheng1995.github.io/" rel="alternate" type="text/html" /><updated>2024-08-04T01:58:06+00:00</updated><id>https://jzheng1995.github.io/feed.xml</id><title type="html">Jason’s portal</title><subtitle>This is Jason&apos;s personal website with projects, blogs, and portfolio.</subtitle><author><name>Jason Zheng</name><email>jzheng1995@gmail.com</email></author><entry><title type="html">Building an image classifier</title><link href="https://jzheng1995.github.io/2024/08/03/pet-identifier/" rel="alternate" type="text/html" title="Building an image classifier" /><published>2024-08-03T00:00:00+00:00</published><updated>2024-08-03T00:00:00+00:00</updated><id>https://jzheng1995.github.io/2024/08/03/pet-identifier</id><content type="html" xml:base="https://jzheng1995.github.io/2024/08/03/pet-identifier/"><![CDATA[<p>Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier.</p>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="https://jzheng1995.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://jzheng1995.github.io/" rel="alternate" type="text/html" /><updated>2024-08-06T23:38:23+00:00</updated><id>https://jzheng1995.github.io/feed.xml</id><title type="html">Jason’s portal</title><subtitle>This is Jason&apos;s personal website with projects, blogs, and portfolio.</subtitle><author><name>Jason Zheng</name><email>jzheng1995@gmail.com</email></author><entry><title type="html">Building an image classifier</title><link href="https://jzheng1995.github.io/2024/08/03/pet-identifier/" rel="alternate" type="text/html" title="Building an image classifier" /><published>2024-08-03T00:00:00+00:00</published><updated>2024-08-03T00:00:00+00:00</updated><id>https://jzheng1995.github.io/2024/08/03/pet-identifier</id><content type="html" xml:base="https://jzheng1995.github.io/2024/08/03/pet-identifier/"><![CDATA[<p>Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier.</p>
 
 <p>The guide is mostly based off <a href="https://course.fast.ai/Lessons/lesson2.html">fast.ai’s chapter 2: Deployment</a> and <a href="https://www.tanishq.ai/blog/posts/2021-11-16-gradio-huggingface.html">Dr. Tanishq’s blog</a>. Several changes had to be made due to Gradio’s deprecation of several APIs.</p>
 
@@ -82,9 +82,67 @@ learn.export()
 
 <h2 id="step-2-qualtrics">Step 2: QualtRics</h2>
 
-<p>As you can imagine, talking to an API ain’t easy. You got to do some GET requests, learn it in R, learn about the particulars of Qualtrics’ API. Luckily for us, there’s a package called <a href="https://github.com/ropensci/qualtRics">QualtRics</a> that has done most of the heavy lifting. All we have to do is set up our API token from earlier and use their library commands.</p>
+<p>As you can imagine, talking to an API ain’t easy. You got to do some GET requests, learn it in R, learn about the particulars of <a href="https://api.qualtrics.com/">Qualtrics’ API</a>. Luckily for us, there’s a package called <a href="https://github.com/ropensci/qualtRics">QualtRics</a> that has done most of the heavy lifting. All we have to do is set up our API token from earlier and use their library commands.</p>
 
-<h2 id="under-construction">UNDER CONSTRUCTION</h2>]]></content><author><name>Jason</name></author><summary type="html"><![CDATA[Introduction - Qualtrics and R]]></summary></entry><entry><title type="html">First post</title><link href="https://jzheng1995.github.io/2024/03/10/first-post/" rel="alternate" type="text/html" title="First post" /><published>2024-03-10T00:00:00+00:00</published><updated>2024-03-10T00:00:00+00:00</updated><id>https://jzheng1995.github.io/2024/03/10/first-post</id><content type="html" xml:base="https://jzheng1995.github.io/2024/03/10/first-post/"><![CDATA[<p>This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.</p>
+<h2 id="qualtrics-authorization">Qualtrics authorization</h2>
+<p>My method to going about this is to create a R script and save it in the same folder as my Qualtrics wrangling code/notebook. Use the following code below as a template for your R script credential.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>library(qualtRics)
+
+qualtrics_api_credentials(api_key = "&lt;YOUR-QUALTRICS_API_KEY&gt;", 
+                          base_url = "&lt;YOUR-QUALTRICS_BASE_URL&gt;",
+                          install = TRUE)
+</code></pre></div></div>
+<p>You’ll notice that two fields have to be filled in for this to work.The API key is the API token we generated from earlier. The base url can be found using <a href="https://api.qualtrics.com/1aea264443797-base-url-and-datacenter-i-ds">this Qualtrics document</a>.</p>
+
+<p>If you’re working from a Canadian institution, you’re likely going to use “https://ca1.qualtrics.com/API/v3” for your base_url since there’s only one Canadian Qualtrics datacenter. Check <a href="https://api.qualtrics.com/YXBpOjYwOTEz-data-access-ap-is">here</a> for other base urls if you’re from an US institution.</p>
+
+<p>Once you have your R script credential set up, insert the following chunk in the document you plan on using to access Qualtrics surveys.</p>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>source("qualtrics_key.R")
+</code></pre></div></div>
+
+<h2 id="code-and-query">Code and query</h2>
+
+<p>Now that we’ve set up our authentication, we should be able to access our Qualtrics account and connect to our surveys. The following code below should return the names of all your surveys. If this doesn’t work, that probably means the authentication key is not working and you’ll have to go back to troubleshoot.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Retrieve all survey names in account
+survey_list &lt;- all_surveys() 
+survey_list
+</code></pre></div></div>
+
+<p>For my case, I was interested in extracting the surveys that were related to a COVID-19 study from my lab. I use regular expression to filter out survey names related to COVID-19. Feel free to substitute the “covid” string for your own filter purposes. There are two fields in this output you’ll want to take note of. The first is survey <code class="language-plaintext highlighter-rouge">name</code>, which is the name that you’ve given to your suvey. The second is survey <code class="language-plaintext highlighter-rouge">id</code>, which is an unique identifier that Qualtrics gives to each of your surveys. We’ll use this information later.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Filter covid-related study surveys
+covid_survey_list &lt;- survey_list %&gt;% as_tibble() %&gt;% filter(str_detect(name,regex("covid", ignore_case = T))) 
+</code></pre></div></div>
+
+<p>The function that extracts surveys is <code class="language-plaintext highlighter-rouge">fetch_survey()</code>. There are several parameters in this function for you to explore. I’ll be simply going over my use case but feel free to check out <a href="https://docs.ropensci.org/qualtRics/reference/fetch_survey.html">the documentation</a> for more information.</p>
+
+<p>I wanted to read every survey as separate RDS files into a designated folder. I have a code chunk below to achieve this, feel free to adapt it. Remember to change <code class="language-plaintext highlighter-rouge">project_directory</code> to your desired location.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Save each covid survey within temporary directory and read into environment
+for (i in 1:nrow(covid_survey_list)){
+  assign(covid_survey_list$name[i], 
+         fetch_survey(surveyID = covid_survey_list$id[i],
+                      unanswer_recode = -99,
+                      save_dir = project_directory
+                      ))
+}
+</code></pre></div></div>
+
+<p>I’ll now go over each parameter input.</p>
+
+<p>Surveys are requested by on survey <code class="language-plaintext highlighter-rouge">id</code>. Notice that I created a table earlier that maps survey <code class="language-plaintext highlighter-rouge">id</code> to <code class="language-plaintext highlighter-rouge">name</code>. I identified the surveys I wanted by <code class="language-plaintext highlighter-rouge">name</code> and then map it to <code class="language-plaintext highlighter-rouge">id</code>. <code class="language-plaintext highlighter-rouge">id</code> is also fixed and isn’t subject to change. I like using this for name assignment because the workflow will be more likely reproducible.</p>
+
+<p><code class="language-plaintext highlighter-rouge">fetch_survey()</code> works by first saving the files to a temporary file folder but you can add the <code class="language-plaintext highlighter-rouge">save_dir</code> parameter to specify a target folder.</p>
+
+<p><code class="language-plaintext highlighter-rouge">unanswer_code</code> represents questions that are seen but unanswered: To differentiate from simply not finishing the survey, I assign a <code class="language-plaintext highlighter-rouge">-99</code> value to this scenario.</p>
+
+<p><span style="color:red"><strong><em>Warning</em></strong> </span>: When you download a Qualtrics survey manually, the exported datetime fields are dependent on the timzezone set in your account settings. However, API-exported survey data have datetime set as UTC by default. See <a href="https://www.qualtrics.com/support/survey-platform/data-and-analysis-module/data/download-data/understanding-your-dataset/">here for data export documentation</a>.</p>
+
+<h2 id="summary">Summary</h2>
+
+<p>This has been an overview of how to connect to Qualtrics surveys in R. We reviewed how to create API credentials and access surveys via the <code class="language-plaintext highlighter-rouge">QualtRics</code> package. I hope you found this guide helpful, feel free to contact me for feedback or questions!</p>]]></content><author><name>Jason</name></author><summary type="html"><![CDATA[Introduction - Qualtrics and R]]></summary></entry><entry><title type="html">First post</title><link href="https://jzheng1995.github.io/2024/03/10/first-post/" rel="alternate" type="text/html" title="First post" /><published>2024-03-10T00:00:00+00:00</published><updated>2024-03-10T00:00:00+00:00</updated><id>https://jzheng1995.github.io/2024/03/10/first-post</id><content type="html" xml:base="https://jzheng1995.github.io/2024/03/10/first-post/"><![CDATA[<p>This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.</p>
 
 <h1 id="syntax">Syntax</h1>
 
