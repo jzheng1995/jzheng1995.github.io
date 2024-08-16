@@ -2,7 +2,7 @@
 title: "Building an image classifier"
 ---
 
-Hi everyone. I'm going to review the steps in creating and deploying a basic pet breed identifier.
+Hi everyone. I'm going to review the steps in creating and deploying a basic pet breed identifier for cats and dogs.
 
 The guide is mostly based off [fast.ai's chapter 2: Deployment](https://course.fast.ai/Lessons/lesson2.html) and [Dr. Tanishq's blog](https://www.tanishq.ai/blog/posts/2021-11-16-gradio-huggingface.html). Several changes had to be made due to Gradio's deprecation of several APIs.
 

@@ -345,4 +345,7 @@ collections:
   deeplearning:
     output: true
     permalink: /:collection/:path/
+  forecasting:
+    output: true
+    permalink: /:collection/:path/
     
