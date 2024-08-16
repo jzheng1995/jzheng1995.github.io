@@ -5,6 +5,12 @@ var store = [{
         "url": "/Pet_Identifier/",
         "teaser": null
       },{
+        "title": "Forecast 01: Predicting energy consumption",
+        "excerpt":"Introduction In this post, we explore how to predict energy prices in London using a blend of advanced machine learning techniques. Our approach centers on XGBoost, a leading gradient boosting framework renowned for its strong performance with structured data. By tapping into its native Python API, we can model the...","categories": [],
+        "tags": [],
+        "url": "/forecasting/01-energyforecast/",
+        "teaser": null
+      },{
         "title": "Home Credit 01: ETL",
         "excerpt":"2024-03-11-home_credit_ETL.knit Code Show All Code Hide All Code 0.1 Introduction This is primarily an ETL document for the 2024 home credit competition data on Kaggle. This will also be a first attempt at 1) a kaggle competition, 2) approaching this dataset, and 3) documenting the bottom-up process for public review....","categories": [],
         "tags": [],
@@ -24,7 +30,7 @@ var store = [{
         "teaser": null
       },{
         "title": "Building an image classifier",
-        "excerpt":"Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier. The guide is mostly based off fast.ai’s chapter 2: Deployment and Dr. Tanishq’s blog. Several changes had to be made due to Gradio’s deprecation of several APIs. The deployed app follows through these...","categories": [],
+        "excerpt":"Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier for cats and dogs. The guide is mostly based off fast.ai’s chapter 2: Deployment and Dr. Tanishq’s blog. Several changes had to be made due to Gradio’s deprecation of several APIs. The deployed...","categories": [],
         "tags": [],
         "url": "/2024/08/03/pet-identifier/",
         "teaser": null

@@ -9,8 +9,8 @@
   <head>
     <meta charset="utf-8">
 
-<!-- begin _includes/seo.html --><title>Pet Identifier - Jason’s portal</title>
-<meta name="description" content="">
+<!-- begin _includes/seo.html --><title>Forecast 01: Predicting energy consumption - Jason’s portal</title>
+<meta name="description" content="Introduction">
 
 
   <meta name="author" content="Jason Zheng">
@@ -22,11 +22,11 @@
 <meta property="og:type" content="article">
 <meta property="og:locale" content="en_US">
 <meta property="og:site_name" content="Jason's portal">
-<meta property="og:title" content="Pet Identifier">
-<meta property="og:url" content="https://jzheng1995.github.io/Pet_Identifier/">
+<meta property="og:title" content="Forecast 01: Predicting energy consumption">
+<meta property="og:url" content="https://jzheng1995.github.io/forecasting/01-energyforecast/">
 
 
-  <meta property="og:description" content="">
+  <meta property="og:description" content="Introduction">
 
 
 
@@ -45,7 +45,7 @@
   
 
 
-<link rel="canonical" href="https://jzheng1995.github.io/Pet_Identifier/">
+<link rel="canonical" href="https://jzheng1995.github.io/forecasting/01-energyforecast/">
 
 
 
@@ -108,7 +108,7 @@
 
   </head>
 
-  <body class="layout--single">
+  <body class="layout--single wide">
     <nav class="skip-links">
   <ul>
     <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
@@ -163,8 +163,8 @@
 
 
   <article class="page h-entry" itemscope itemtype="https://schema.org/CreativeWork">
-    <meta itemprop="headline" content="Pet Identifier">
-    <meta itemprop="description" content="">
+    <meta itemprop="headline" content="Forecast 01: Predicting energy consumption">
+    <meta itemprop="description" content="Introduction">
     <meta itemprop="datePublished" content="2024-08-16T04:47:57+00:00">
     
 
@@ -172,7 +172,7 @@
       
         <header>
           <h1 id="page-title" class="page__title p-name" itemprop="headline">
-            <a href="https://jzheng1995.github.io/Pet_Identifier/" class="u-url" itemprop="url">Pet Identifier
+            <a href="https://jzheng1995.github.io/forecasting/01-energyforecast/" class="u-url" itemprop="url">Forecast 01: Predicting energy consumption
 </a>
           </h1>
           
@@ -183,9 +183,20 @@
 
       <section class="page__content e-content" itemprop="text">
         
-        <script type="module" src="https://gradio.s3-us-west-2.amazonaws.com/4.40.0/gradio.js"></script>
+        <p><img src="/assets/img/misc/forecast_graph.jpeg" alt="energy-forecast" /></p>
+<h1 id="introduction">Introduction</h1>
 
-<gradio-app src="https://jchzheng-catdog.hf.space"></gradio-app>
+<p>In this post, we explore how to predict energy prices in London using a blend of advanced machine learning techniques.</p>
+
+<p>Our approach centers on XGBoost, a leading gradient boosting framework renowned for its strong performance with structured data. By tapping into its native Python API, we can model the intricate patterns that define time-series data, such as energy prices. But we don’t stop there—Bayesian optimization with Hyperopt is employed to fine-tune the model, ensuring that we find the best possible hyperparameters with maximum efficiency.</p>
+
+<p>To tackle the computational demands of this process, we leverage GPU acceleration in XGBoost. This not only slashes training time but also enables us to work with larger datasets and perform more comprehensive hyperparameter searches.</p>
+
+<p>Throughout this exercise, we apply these powerful tools to historical energy price data from London. Our goal is to build a model capable of delivering accurate forecasts, helping stakeholders navigate the complexities of the energy market with greater confidence.</p>
+
+<p>Our notebook exercise is embedded below. Feel free to access the notebook directly <a href="https://www.kaggle.com/code/jasonzheng2021/london-energy?kernelSessionId=192822291">here</a>.</p>
+
+<iframe src="https://www.kaggle.com/embed/jasonzheng2021/london-energy?kernelSessionId=192822291" height="800" style="margin: 0 auto; width: 100%; max-width: 950px;" frameborder="0" scrolling="auto" title="London energy"></iframe>
 
         
       </section>

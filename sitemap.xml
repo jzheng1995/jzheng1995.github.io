@@ -2,11 +2,15 @@
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
 <loc>https://jzheng1995.github.io/Pet_Identifier/</loc>
-<lastmod>2024-08-06T23:38:23+00:00</lastmod>
+<lastmod>2024-08-16T04:47:57+00:00</lastmod>
+</url>
+<url>
+<loc>https://jzheng1995.github.io/forecasting/01-energyforecast/</loc>
+<lastmod>2024-08-16T04:47:57+00:00</lastmod>
 </url>
 <url>
 <loc>https://jzheng1995.github.io/homecredit/01-home-credit-etl/</loc>
-<lastmod>2024-08-06T23:38:23+00:00</lastmod>
+<lastmod>2024-08-16T04:47:57+00:00</lastmod>
 </url>
 <url>
 <loc>https://jzheng1995.github.io/2024/03/10/first-post/</loc>
@@ -22,11 +26,11 @@
 </url>
 <url>
 <loc>https://jzheng1995.github.io/python/01-pipeline/</loc>
-<lastmod>2024-08-06T23:38:23+00:00</lastmod>
+<lastmod>2024-08-16T04:47:57+00:00</lastmod>
 </url>
 <url>
 <loc>https://jzheng1995.github.io/python/02-rf-tuning/</loc>
-<lastmod>2024-08-06T23:38:23+00:00</lastmod>
+<lastmod>2024-08-16T04:47:57+00:00</lastmod>
 </url>
 <url>
 <loc>https://jzheng1995.github.io/about/</loc>
@@ -57,6 +61,6 @@
 </url>
 <url>
 <loc>https://jzheng1995.github.io/assets/pdf/Jason%20Zheng%20Resume.pdf</loc>
-<lastmod>2024-08-06T23:38:15+00:00</lastmod>
+<lastmod>2024-08-16T04:47:26+00:00</lastmod>
 </url>
 </urlset>
