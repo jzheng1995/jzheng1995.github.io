@@ -25,19 +25,26 @@ feature_row:
     url: "/Pet_Identifier/"
     btn_class: "btn--primary"
     btn_label: "See Demo"
-  - image_path: /assets/img/misc/churn.jpg
-    alt: "churn"
-    title: Bank Churn
-    excerpt: "Predicting bank churn using Python and Scikit-learn."
-    url: "https://github.com/jzheng1995/Bank-Churn"
-    btn_class: "btn--primary"
-    btn_label: "Learn more"
-feature_row2:
   - image_path: /assets/img/misc/handshake.jpg
     alt: "cross-sell"
     title: Insurance Cross Sell
     excerpt: "Predicting Insurance Cross Sell with Bayesian Optimization."
     url: "https://github.com/jzheng1995/Insurance-Cross-Sell"
+    btn_class: "btn--primary"
+    btn_label: "Learn more"
+feature_row2:
+  - image_path: /assets/img/misc/forecast_mini.jpeg
+    alt: "forecast"
+    title: Timeseries Forecast
+    excerpt: "Forecasting London energy consumption using XGBoost."
+    url: "/forecasting/01-energyforecast"
+    btn_class: "btn--primary"
+    btn_label: "Learn more"
+  - image_path: /assets/img/misc/churn.jpg
+    alt: "churn"
+    title: Bank Churn
+    excerpt: "Predicting bank churn using Python and Scikit-learn."
+    url: "https://github.com/jzheng1995/Bank-Churn"
     btn_class: "btn--primary"
     btn_label: "Learn more"
   - image_path: /assets/img/misc/homecredit.jpeg
