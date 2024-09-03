@@ -18,11 +18,11 @@ feature_row:
     btn_class: "btn--primary"
     btn_label: "Learn more"
     feature_row:
-  - image_path: /assets/img/misc/pets.jpeg
-    alt: "pets"
-    title: "Pet Identifier"
-    excerpt: "Breed identifier for pets! Deployed with Hugging Face and Gradio."
-    url: "/Pet_Identifier/"
+  - image_path: /assets/img/misc/dashboard.jpeg
+    alt: "dashboard"
+    title: "Labour Market Dashboard"
+    excerpt: "Analytic dashboard made using StatCan Labour data and Streamlit."
+    url: "/Labour-Dashboard/"
     btn_class: "btn--primary"
     btn_label: "See Demo"
   - image_path: /assets/img/misc/handshake.jpg
@@ -53,8 +53,17 @@ feature_row2:
     excerpt: "SQL extraction and machine learning in R"
     url: "https://github.com/jzheng1995/Insurance-Cross-Sell"
     btn_class: "btn--primary"
-    btn_label: "Learn more" 
+    btn_label: "Learn more"
+feature_row3:
+  - image_path: /assets/img/misc/pets.jpeg
+    alt: "pets"
+    title: "Pet Identifier"
+    excerpt: "Breed identifier for pets! Deployed with Hugging Face and Gradio."
+    url: "/Pet_Identifier/"
+    btn_class: "btn--primary"
+    btn_label: "See Demo"
 ---
 
 {% include feature_row %}
 {% include feature_row id="feature_row2"  %}
+{% include feature_row id="feature_row3"  %}
