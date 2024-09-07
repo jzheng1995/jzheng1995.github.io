@@ -14,5 +14,7 @@ main:
   #   url: /posts/
   - title: "Collections"
     url: /collection-archive/
+  - title: 'Job Vacancy Dashboard'
+    url: /job-vacancy-dashboard/
   - title: 'Labour Market Dashboard'
-    url: /Labour-Dashboard/
+    url: /labour-dashboard/

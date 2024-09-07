@@ -348,4 +348,7 @@ collections:
   forecasting:
     output: true
     permalink: /:collection/:path/
+  dashboards:
+    output: true
+    permalink: /:collection/:path/
     

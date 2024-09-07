@@ -1,5 +1,5 @@
 ---
-permalink: /Labour-Dashboard/
+permalink: /labour-dashboard/
 layout: default_jz
 classes: wide
 ---

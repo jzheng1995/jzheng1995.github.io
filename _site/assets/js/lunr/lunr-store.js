@@ -1,4 +1,16 @@
 var store = [{
+        "title": "Job Vacancy Dashboard",
+        "excerpt":" ","categories": [],
+        "tags": [],
+        "url": "/job-vacancy-dashboard/",
+        "teaser": null
+      },{
+        "title": "Labourdashboard",
+        "excerpt":" ","categories": [],
+        "tags": [],
+        "url": "/labour-dashboard/",
+        "teaser": null
+      },{
         "title": "Pet Identifier",
         "excerpt":"   ","categories": [],
         "tags": [],
