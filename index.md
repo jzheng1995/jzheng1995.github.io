@@ -18,11 +18,11 @@ feature_row:
     btn_class: "btn--primary"
     btn_label: "Learn more"
     feature_row:
-  - image_path: /assets/img/misc/dashboard.jpeg
+  - image_path: /assets/img/misc/vacancydashboard.jpeg
     alt: "dashboard"
-    title: "Labour Market Dashboard"
-    excerpt: "Analytic dashboard made using StatCan Labour data and Streamlit."
-    url: "/Labour-Dashboard/"
+    title: "Job Vacancy Dashboard"
+    excerpt: "Exploring Job Vacancy Rate in Canada using Streamlit."
+    url: "/job-vacancy-dashboard/"
     btn_class: "btn--primary"
     btn_label: "See Demo"
   - image_path: /assets/img/misc/vertex.jpeg
@@ -33,13 +33,13 @@ feature_row:
     btn_class: "btn--primary"
     btn_label: "Learn more"
 feature_row2:
-  - image_path: /assets/img/misc/forecast_mini.jpeg
-    alt: "forecast"
-    title: Timeseries Forecast
-    excerpt: "Forecasting London energy consumption using XGBoost."
-    url: "/forecasting/01-energyforecast"
+  - image_path: /assets/img/misc/dashboard.jpeg
+    alt: "dashboard"
+    title: "Labour Market Dashboard"
+    excerpt: "Analytic dashboard made using Statistics Canada Labour data and Streamlit."
+    url: "/labour-dashboard/"
     btn_class: "btn--primary"
-    btn_label: "Learn more"
+    btn_label: "See Demo"
   - image_path: /assets/img/misc/churn.jpg
     alt: "churn"
     title: Bank Churn
@@ -50,11 +50,18 @@ feature_row2:
   - image_path: /assets/img/misc/handshake.jpg
     alt: "cross-sell"
     title: Insurance Cross Sell
-    excerpt: "Predicting Insurance Cross Sell with Bayesian Optimization."
+    excerpt: "Predicting Insurance Cross Sell with Random Forests and Bayesian Optimization."
     url: "https://github.com/jzheng1995/Insurance-Cross-Sell"
     btn_class: "btn--primary"
     btn_label: "Learn more"
 feature_row3:
+  - image_path: /assets/img/misc/forecast_mini.jpeg
+    alt: "forecast"
+    title: Timeseries Forecast
+    excerpt: "Forecasting London energy consumption using XGBoost."
+    url: "/forecasting/01-energyforecast"
+    btn_class: "btn--primary"
+    btn_label: "Learn more"
   - image_path: /assets/img/misc/pets.jpeg
     alt: "pets"
     title: "Pet Identifier"
@@ -65,7 +72,7 @@ feature_row3:
   - image_path: /assets/img/misc/homecredit.jpeg
     alt: "home-credit"
     title: Home Credit
-    excerpt: "SQL extraction and machine learning in R"
+    excerpt: "Data manipulation and extraction using R and SQL."
     url: "https://github.com/jzheng1995/Insurance-Cross-Sell"
     btn_class: "btn--primary"
     btn_label: "Learn more"
