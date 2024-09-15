@@ -25,11 +25,11 @@ feature_row:
     url: "/Labour-Dashboard/"
     btn_class: "btn--primary"
     btn_label: "See Demo"
-  - image_path: /assets/img/misc/handshake.jpg
-    alt: "cross-sell"
-    title: Insurance Cross Sell
-    excerpt: "Predicting Insurance Cross Sell with Bayesian Optimization."
-    url: "https://github.com/jzheng1995/Insurance-Cross-Sell"
+  - image_path: /assets/img/misc/vertex.jpeg
+    alt: "google-cloud-model"
+    title: "Deploying ML on cloud"
+    excerpt: "Deploying a classification model on Google Cloud."
+    url: "/2024/09/14/vertex-deployment/"
     btn_class: "btn--primary"
     btn_label: "Learn more"
 feature_row2:
@@ -47,10 +47,10 @@ feature_row2:
     url: "https://github.com/jzheng1995/Bank-Churn"
     btn_class: "btn--primary"
     btn_label: "Learn more"
-  - image_path: /assets/img/misc/homecredit.jpeg
-    alt: "home-credit"
-    title: Home Credit
-    excerpt: "SQL extraction and machine learning in R"
+  - image_path: /assets/img/misc/handshake.jpg
+    alt: "cross-sell"
+    title: Insurance Cross Sell
+    excerpt: "Predicting Insurance Cross Sell with Bayesian Optimization."
     url: "https://github.com/jzheng1995/Insurance-Cross-Sell"
     btn_class: "btn--primary"
     btn_label: "Learn more"
@@ -62,6 +62,13 @@ feature_row3:
     url: "/Pet_Identifier/"
     btn_class: "btn--primary"
     btn_label: "See Demo"
+  - image_path: /assets/img/misc/homecredit.jpeg
+    alt: "home-credit"
+    title: Home Credit
+    excerpt: "SQL extraction and machine learning in R"
+    url: "https://github.com/jzheng1995/Insurance-Cross-Sell"
+    btn_class: "btn--primary"
+    btn_label: "Learn more"
 ---
 
 {% include feature_row %}

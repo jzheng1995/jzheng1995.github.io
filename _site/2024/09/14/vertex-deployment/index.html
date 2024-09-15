@@ -1,4 +1,335 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.3.3">Jekyll</generator><link href="http://localhost:4000/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/" rel="alternate" type="text/html" /><updated>2024-09-14T17:25:41-07:00</updated><id>http://localhost:4000/feed.xml</id><title type="html">Jason’s portal</title><subtitle>This is Jason&apos;s personal website with projects, blogs, and portfolio.</subtitle><author><name>Jason Zheng</name><email>jzheng1995@gmail.com</email></author><entry><title type="html">Vertex Deployment</title><link href="http://localhost:4000/2024/09/14/vertex-deployment/" rel="alternate" type="text/html" title="Vertex Deployment" /><published>2024-09-14T00:00:00-07:00</published><updated>2024-09-14T00:00:00-07:00</updated><id>http://localhost:4000/2024/09/14/vertex-deployment</id><content type="html" xml:base="http://localhost:4000/2024/09/14/vertex-deployment/"><![CDATA[<h1 id="vertex-ai-pipelines-training-and-deloying-ml-models-using-google-cloud">Vertex AI Pipelines: Training and deloying ML models using google cloud</h1>
+<!doctype html>
+<!--
+  Minimal Mistakes Jekyll Theme 4.24.0 by Michael Rose
+  Copyright 2013-2020 Michael Rose - mademistakes.com | @mmistakes
+  Free for personal and commercial use under the MIT license
+  https://github.com/mmistakes/minimal-mistakes/blob/master/LICENSE
+-->
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="utf-8">
+
+<!-- begin _includes/seo.html --><title>Vertex Deployment - Jason’s portal</title>
+<meta name="description" content="Vertex AI Pipelines: Training and deloying ML models using google cloud">
+
+
+  <meta name="author" content="Jason Zheng">
+  
+  <meta property="article:author" content="Jason Zheng">
+  
+
+
+<meta property="og:type" content="article">
+<meta property="og:locale" content="en_US">
+<meta property="og:site_name" content="Jason's portal">
+<meta property="og:title" content="Vertex Deployment">
+<meta property="og:url" content="http://localhost:4000/2024/09/14/vertex-deployment/">
+
+
+  <meta property="og:description" content="Vertex AI Pipelines: Training and deloying ML models using google cloud">
+
+
+
+
+
+
+
+  <meta property="article:published_time" content="2024-09-14T00:00:00-07:00">
+
+
+
+
+
+  
+
+  
+
+
+<link rel="canonical" href="http://localhost:4000/2024/09/14/vertex-deployment/">
+
+
+
+
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    
+      "@type": "Person",
+      "name": "Jason Zheng",
+      "url": "http://localhost:4000/"
+    
+  }
+</script>
+
+
+
+
+
+
+
+<!-- end _includes/seo.html -->
+
+
+
+  <link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Jason's portal Feed">
+
+
+<!-- https://t.co/dKP3o1e -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script>
+  document.documentElement.className = document.documentElement.className.replace(/\bno-js\b/g, '') + ' js ';
+</script>
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5/css/all.min.css"></noscript>
+
+
+
+    <!-- start custom head snippets -->
+
+<!-- insert favicons. use https://realfavicongenerator.net/ -->
+
+
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/img/logo/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/img/logo/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/assets/img/logo/favicon-16x16.png">
+<link rel="manifest" href="/assets/img/logo/site.webmanifest">
+<link rel="mask-icon" href="/assets/img/logo/safari-pinned-tab.svg" color="#5bbad5">
+<link rel="shortcut icon" href="/assets/img/logo/favicon.ico">
+<meta name="msapplication-TileColor" content="#da532c">
+<meta name="msapplication-config" content="/assets/img/logo/browserconfig.xml">
+<meta name="theme-color" content="#ffffff">
+
+
+<!-- end custom head snippets -->
+
+  </head>
+
+  <body class="layout--single wide">
+    <nav class="skip-links">
+  <ul>
+    <li><a href="#site-nav" class="screen-reader-shortcut">Skip to primary navigation</a></li>
+    <li><a href="#main" class="screen-reader-shortcut">Skip to content</a></li>
+    <li><a href="#footer" class="screen-reader-shortcut">Skip to footer</a></li>
+  </ul>
+</nav>
+
+    
+
+<div class="masthead">
+  <div class="masthead__inner-wrap">
+    <div class="masthead__menu">
+      <nav id="site-nav" class="greedy-nav">
+        
+          <a class="site-logo" href="/"><img src="/assets/img/logo/android-chrome-192x192.png" alt="Jason's portal"></a>
+        
+        <a class="site-title" href="/">
+          Jason's portal
+          <span class="site-subtitle">Communications on data</span>
+        </a>
+        <ul class="visible-links"><li class="masthead__menu-item">
+              <a href="/year-archive/">Posts</a>
+            </li><li class="masthead__menu-item">
+              <a href="/about/">About</a>
+            </li><li class="masthead__menu-item">
+              <a href="/resume/">Resume</a>
+            </li><li class="masthead__menu-item">
+              <a href="/collection-archive/">Collections</a>
+            </li><li class="masthead__menu-item">
+              <a href="/job-vacancy-dashboard/">Job Vacancy Dashboard</a>
+            </li><li class="masthead__menu-item">
+              <a href="/labour-dashboard/">Labour Market Dashboard</a>
+            </li></ul>
+        
+        <button class="greedy-nav__toggle hidden" type="button">
+          <span class="visually-hidden">Toggle menu</span>
+          <div class="navicon"></div>
+        </button>
+        <ul class="hidden-links hidden"></ul>
+      </nav>
+    </div>
+  </div>
+</div>
+
+
+    <div class="initial-content">
+      
+
+
+
+
+
+<div id="main" role="main">
+  
+  <div class="sidebar sticky">
+  
+
+
+<div itemscope itemtype="https://schema.org/Person" class="h-card">
+
+  
+    <div class="author__avatar">
+      <a href="http://localhost:4000/">
+        <img src="/assets/img/headshot_circle.png" alt="Jason Zheng" itemprop="image" class="u-photo">
+      </a>
+    </div>
+  
+
+  <div class="author__content">
+    <h3 class="author__name p-name" itemprop="name">
+      <a class="u-url" rel="me" href="http://localhost:4000/" itemprop="url">Jason Zheng</a>
+    </h3>
+    
+      <div class="author__bio p-note" itemprop="description">
+        <p>Data consumer.</p>
+
+      </div>
+    
+  </div>
+
+  <div class="author__urls-wrapper">
+    <button class="btn btn--inverse">Follow</button>
+    <ul class="author__urls social-icons">
+      
+        <li itemprop="homeLocation" itemscope itemtype="https://schema.org/Place">
+          <i class="fas fa-fw fa-map-marker-alt" aria-hidden="true"></i> <span itemprop="name" class="p-locality">Vancouver, BC</span>
+        </li>
+      
+
+      
+        
+          
+        
+          
+            <li><a href="https://jzheng1995.github.io" rel="nofollow noopener noreferrer me" itemprop="sameAs"><i class="fas fa-fw fa-link" aria-hidden="true"></i><span class="label">Website</span></a></li>
+          
+        
+          
+            <li><a href="https://github.com/jzheng1995" rel="nofollow noopener noreferrer me" itemprop="sameAs"><i class="fab fa-fw fa-github" aria-hidden="true"></i><span class="label">GitHub</span></a></li>
+          
+        
+          
+        
+          
+        
+          
+        
+      
+
+      
+
+      
+        <li>
+          <a href="mailto:jzheng1995@gmail.com" rel="me" class="u-email">
+            <meta itemprop="email" content="jzheng1995@gmail.com" />
+            <i class="fas fa-fw fa-envelope-square" aria-hidden="true"></i><span class="label">Email</span>
+          </a>
+        </li>
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      
+
+      <!--
+  <li>
+    <a href="http://link-to-whatever-social-network.com/user/" itemprop="sameAs" rel="nofollow noopener noreferrer me">
+      <i class="fas fa-fw" aria-hidden="true"></i> Custom Social Profile Link
+    </a>
+  </li>
+-->
+    </ul>
+  </div>
+</div>
+
+  
+  </div>
+
+
+
+  <article class="page h-entry" itemscope itemtype="https://schema.org/CreativeWork">
+    <meta itemprop="headline" content="Vertex Deployment">
+    <meta itemprop="description" content="Vertex AI Pipelines: Training and deloying ML models using google cloud">
+    <meta itemprop="datePublished" content="2024-09-14T00:00:00-07:00">
+    
+
+    <div class="page__inner-wrap">
+      
+        <header>
+          <h1 id="page-title" class="page__title p-name" itemprop="headline">
+            <a href="http://localhost:4000/2024/09/14/vertex-deployment/" class="u-url" itemprop="url">Vertex Deployment
+</a>
+          </h1>
+          
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          9 minute read
+        
+      </span>
+    
+  </p>
+
+
+        </header>
+      
+
+      <section class="page__content e-content" itemprop="text">
+        
+        <h1 id="vertex-ai-pipelines-training-and-deloying-ml-models-using-google-cloud">Vertex AI Pipelines: Training and deloying ML models using google cloud</h1>
 
 <h2 id="overview">Overview</h2>
 
@@ -479,217 +810,237 @@ Koklu, M. and Ozkan, I.A., (2020), “Multiclass Classification of Dry Beans Usi
 
 <h2 id="conclusion">Conclusion</h2>
 
-<p>This pipeline automates the entire machine learning lifecycle, from creating a dataset in BigQuery to training a model using Vertex AI AutoML, evaluating the model, and deploying it to an endpoint for production use. By leveraging Google Cloud’s Vertex AI components, this pipeline reduces the manual overhead in building and deploying machine learning models, providing a scalable and efficient workflow.</p>]]></content><author><name>Jason Zheng</name><email>jzheng1995@gmail.com</email></author><summary type="html"><![CDATA[Vertex AI Pipelines: Training and deloying ML models using google cloud]]></summary></entry><entry><title type="html">Building an image classifier</title><link href="http://localhost:4000/2024/08/03/pet-identifier/" rel="alternate" type="text/html" title="Building an image classifier" /><published>2024-08-03T00:00:00-07:00</published><updated>2024-08-03T00:00:00-07:00</updated><id>http://localhost:4000/2024/08/03/pet-identifier</id><content type="html" xml:base="http://localhost:4000/2024/08/03/pet-identifier/"><![CDATA[<p>Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier for cats and dogs.</p>
+<p>This pipeline automates the entire machine learning lifecycle, from creating a dataset in BigQuery to training a model using Vertex AI AutoML, evaluating the model, and deploying it to an endpoint for production use. By leveraging Google Cloud’s Vertex AI components, this pipeline reduces the manual overhead in building and deploying machine learning models, providing a scalable and efficient workflow.</p>
 
-<p>The guide is mostly based off <a href="https://course.fast.ai/Lessons/lesson2.html">fast.ai’s chapter 2: Deployment</a> and <a href="https://www.tanishq.ai/blog/posts/2021-11-16-gradio-huggingface.html">Dr. Tanishq’s blog</a>. Several changes had to be made due to Gradio’s deprecation of several APIs.</p>
 
-<p>The deployed app follows through these steps:</p>
-<ol>
-  <li>Training pet classifier model</li>
-  <li>Set up Hugging Faces space repository</li>
-  <li>Deploy</li>
-</ol>
+        
+      </section>
 
-<h2 id="model-training">Model training</h2>
+      <footer class="page__meta">
+        
+        
 
-<p>Our model is based on a ResNet50 image classifier trained on Oxford Pets dataset.</p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>from fastai.vision.all import *
-path = untar_data(URLs.PETS)
-dls = ImageDataLoaders.from_name_re(path, get_image_files(path/'images'), pat='(.+)_\d+.jpg', item_tfms=Resize(460), batch_tfms=aug_transforms(size=224, min_scale=0.75))
-learn = vision_learner(dls, models.resnet50, metrics=accuracy)
-learn.fine_tune(1)
-learn.path = Path('.')
-learn.export()
-</code></pre></div></div>
+        
 
-<p>This code creates an export.pkl file. Files that end with .pkl are called pickle and represent preserved Python object. In our case, export.pkl represents our image classifier model.</p>
+  <p class="page__date"><strong><i class="fas fa-fw fa-calendar-alt" aria-hidden="true"></i> Updated:</strong> <time class="dt-published" datetime="2024-09-14T00:00:00-07:00">September 14, 2024</time></p>
 
-<h2 id="hugging-faces-space">Hugging Faces space</h2>
+      </footer>
 
-<p>The next step is to create a <a href="https://huggingface.co/">Hugging Faces</a> account. Create a <a href="https://huggingface.co/spaces">space</a>. From my understanding, a hugging space space acts as a repository for your app files and automatically deploys (launches the app) for you.</p>
+      <section class="page__share">
+  
+    <h4 class="page__share-title">Share on</h4>
+  
 
-<p>For those of you who aren’t familiar with repositories, treat it like a file storage for your app file components. Once you place all your files in there, our deployment knows to look for files inside that repository to spin together your app. Another point to take note of is that not only do you have to define app files, you may also need to include the file dependencies (Python packages in this case) as well. This concept has to do with software development and reproducibility. To define these package dependencies, just simply include a requirements.txt file that names your package (and maybe version, I’ll come back to this later). In my case, I had to add <code class="language-plaintext highlighter-rouge">fastai</code> and <code class="language-plaintext highlighter-rouge">scikit-image</code>.</p>
+  <a href="https://twitter.com/intent/tweet?text=Vertex+Deployment%20http%3A%2F%2Flocalhost%3A4000%2F2024%2F09%2F14%2Fvertex-deployment%2F" class="btn btn--twitter" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Twitter"><i class="fab fa-fw fa-twitter" aria-hidden="true"></i><span> Twitter</span></a>
 
-<p>To see the files in my pet identifier app, check <a href="https://huggingface.co/spaces/jchzheng/catdog/tree/main">here</a>. While it may be more efficient to <a href="https://huggingface.co/docs/hub/en/repositories-getting-started">clone the repository</a> and work locally, I simply uploaded the files through the Hugging Face UI in my space repository (see below). Feel free to download the files in <a href="https://huggingface.co/spaces/jchzheng/catdog/tree/main">my repository</a> and upload to your own.</p>
+  <a href="https://www.facebook.com/sharer/sharer.php?u=http%3A%2F%2Flocalhost%3A4000%2F2024%2F09%2F14%2Fvertex-deployment%2F" class="btn btn--facebook" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on Facebook"><i class="fab fa-fw fa-facebook" aria-hidden="true"></i><span> Facebook</span></a>
 
-<p><img src="https://cdn-lfs.huggingface.co/datasets/huggingface/documentation-images/cec7a1aa3f1fb1c517f0e6f1f32e68a0428fb63c8d79af5a5382146929c18d28?response-content-disposition=inline%3B+filename*%3DUTF-8%27%27upload_files.png%3B+filename%3D%22upload_files.png%22%3B&amp;response-content-type=image%2Fpng&amp;Expires=1722993359&amp;Policy=eyJTdGF0ZW1lbnQiOlt7IkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTcyMjk5MzM1OX19LCJSZXNvdXJjZSI6Imh0dHBzOi8vY2RuLWxmcy5odWdnaW5nZmFjZS5jby9kYXRhc2V0cy9odWdnaW5nZmFjZS9kb2N1bWVudGF0aW9uLWltYWdlcy9jZWM3YTFhYTNmMWZiMWM1MTdmMGU2ZjFmMzJlNjhhMDQyOGZiNjNjOGQ3OWFmNWE1MzgyMTQ2OTI5YzE4ZDI4P3Jlc3BvbnNlLWNvbnRlbnQtZGlzcG9zaXRpb249KiZyZXNwb25zZS1jb250ZW50LXR5cGU9KiJ9XX0_&amp;Signature=XTYvM-1uXY1cs6P-ixK9m%7Eiqi67617m8pI0MYOie-4NG2ur2V4iGB0iE0GKfjEDje8i%7Edr3GCSJoFaExMB2W%7EwvVDuVriMHSe9ZM2BqPlxVUbFddC9SdKbkkwU7EIHlDz08ScBjO3uWqEMGtFaZBC20WigaIq3SwFGXrkoVgnoJskpr8S5HTJXCW1YoR-VfpfH3cVFBKnCucotxCeW3alKf%7EiCtjhGOlHitOJzaq%7EvMvFLksclDCLvAaLjMIo9q2WhU5NVqdVb%7EauMeRQqBC2AeuCnqrEw-2-EniZMlqmPo6hbyLGrdC-CQbPoZ3bO2NCkUlTvxWSnOwaFQ%7Egmyn4Q__&amp;Key-Pair-Id=K3ESJI6DHPFC7" alt=" Hugging Space upload" /></p>
+  <a href="https://www.linkedin.com/shareArticle?mini=true&url=http%3A%2F%2Flocalhost%3A4000%2F2024%2F09%2F14%2Fvertex-deployment%2F" class="btn btn--linkedin" onclick="window.open(this.href, 'window', 'left=20,top=20,width=500,height=500,toolbar=1,resizable=0'); return false;" title="Share on LinkedIn"><i class="fab fa-fw fa-linkedin" aria-hidden="true"></i><span> LinkedIn</span></a>
+</section>
 
-<h2 id="deployment">Deployment</h2>
 
-<p>Gradio provides API interfaces for our app. Gradio allows us to conveniently set up ways for users to upload their own images and see a prediction output. Several API interfaces were deprecated in the 2024 version from the guides I used. Specifically, <code class="language-plaintext highlighter-rouge">gr.inputs.Image(shape=(512, 512)</code> had to be changed to <code class="language-plaintext highlighter-rouge">gr.Image(type = 'pil')</code>, <code class="language-plaintext highlighter-rouge">gr.outputs.Label(num_top_classes=3)</code> changed to <code class="language-plaintext highlighter-rouge">gr.Label(num_top_classes=3)</code>, and <code class="language-plaintext highlighter-rouge">interpretation</code>, <code class="language-plaintext highlighter-rouge">enable_queue</code> were deprecated and were not longer valid arguments. By the time you read this post Gradio may have changed its API again. You can likely fix deployment issues by using an older Gradio version (requirements.txt) or referring to <a href="https://www.gradio.app/docs/gradio/interface">updated documentation</a>. The space will automatically try to launch your app everytime you commit (save) your changes.</p>
+      
+  <nav class="pagination">
+    
+      <a href="/2024/08/03/pet-identifier/" class="pagination--pager" title="Building an image classifier
+">Previous</a>
+    
+    
+      <a href="#" class="pagination--pager disabled">Next</a>
+    
+  </nav>
 
-<h2 id="summary">Summary</h2>
+    </div>
 
-<p>This was an overview of how to deploy an image classifier using Hugging Face and Gradio. You can view <a href="/Pet_Identifier/">my demo here</a>. Feel free to contact me for questions and feedback!</p>]]></content><author><name>Jason Zheng</name><email>jzheng1995@gmail.com</email></author><summary type="html"><![CDATA[Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier for cats and dogs.]]></summary></entry><entry><title type="html">Qualtrics in R</title><link href="http://localhost:4000/2024/07/27/R-qualtrics/" rel="alternate" type="text/html" title="Qualtrics in R" /><published>2024-07-27T00:00:00-07:00</published><updated>2024-07-27T00:00:00-07:00</updated><id>http://localhost:4000/2024/07/27/R-qualtrics</id><content type="html" xml:base="http://localhost:4000/2024/07/27/R-qualtrics/"><![CDATA[<h2 id="introduction---qualtrics-and-r">Introduction - Qualtrics and R</h2>
+    
+  </article>
 
-<p>Are you working in R and use Qualtrics surveys? Have your fingers fallen off from downloading each Qualtrics survey individually? Well, you have come to the right place.</p>
+  
+  
+    <div class="page__related">
+      <h2 class="page__related-title">You may also enjoy</h2>
+      <div class="grid__wrapper">
+        
+          
 
-<p>And for those of you who don’t know what’s going on? Well, hello! You might be wondering what this whole “Qualtrics” and “R” jazz is about. R is a programming language that’s often used for statistical analysis. Qualtrics is a platform that allows users to design and collect survey data. Why do we want to mix the two?</p>
 
-<p>To work your statistical magic in R, you have to get down and dirty with data. But where do you get it from? You get the idea. If you have data in Qualtrics, they have a handy interface to download your collected survey data in its webpage navigation.</p>
 
-<p><a href="https://www.qualtrics.com/support/survey-platform/data-and-analysis-module/data/download-data/export-data-overview/"><img src="https://www.qualtrics.com/m/assets/support/wp-content/uploads//2015/04/exporting-responses-1.png" alt="Qualtrics Manual Download" /></a></p>
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/2024/08/03/pet-identifier/" rel="permalink">Building an image classifier
+</a>
+      
+    </h2>
+    
 
-<p>You can fiddle with the options, hit download, and voila, you have your data. Now do that for every survey. Or in my case, some 36 surveys for a research study.</p>
+  <p class="page__meta">
+    
 
-<p>Now personally, I’d like to spare my carpal-tunneled hands the misery of repetitive downloads. And as it turns out, we can skip all that by interacting with the Qualtrics API! Instead of requesting each survey separately through the front page, we can ask for all the surveys in several lines of code.</p>
+    
 
-<h2 id="overview">Overview</h2>
+    
+      
+      
 
-<p>Here’s an overview of our requirements.</p>
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          2 minute read
+        
+      </span>
+    
+  </p>
 
-<p><img src="/assets/posts/Qualtrics/grapha.png" alt="overview-plan" /></p>
 
-<p>So this is how we’ll approach it.</p>
+    <p class="archive__item-excerpt" itemprop="description">Hi everyone. I’m going to review the steps in creating and deploying a basic pet breed identifier for cats and dogs.
+</p>
+  </article>
+</div>
 
-<p><img src="/assets/posts/Qualtrics/graphb.png" alt="overview-plan" /></p>
+        
+          
 
-<h2 id="step-1-qualtrics-api-token">Step 1: Qualtrics API token</h2>
 
-<p>For my non-technical friends out there: think of Qualtrics as our house of data, and the Application Programming Interface (API) as their door. We can get our data if we knock on their door, but we have to prove we aren’t strangers. That’s where the API token comes in, it’s our identification card!</p>
 
-<p>You can access the token generation page by clicking on account settings.</p>
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/2024/07/27/R-qualtrics/" rel="permalink">Qualtrics in R
+</a>
+      
+    </h2>
+    
+
+  <p class="page__meta">
+    
+
+    
+
+    
+      
+      
+
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          5 minute read
+        
+      </span>
+    
+  </p>
+
+
+    <p class="archive__item-excerpt" itemprop="description">Introduction - Qualtrics and R
+</p>
+  </article>
+</div>
 
-<p><img src="https://www.qualtrics.com/m/assets/support/wp-content/uploads/2015/04/account-settings-1.png" alt="account-settings" /></p>
+        
+          
 
-<p>Once you’re in the account settings, you can click on Qualtrics IDs and then generate token from there.</p>
 
-<p><img src="https://www.qualtrics.com/m/assets/support/wp-content/uploads/2021/05/generate-api-34.png" alt="generate-token" /></p>
 
-<p><span style="color:red"><strong><em>Warning</em></strong> </span> If you don’t see the token generation, it’s likely that your account has restricted access. Please contact your IT crew or whoever manages the Qualtrics subscription to enable it for you.</p>
+<div class="grid__item">
+  <article class="archive__item" itemscope itemtype="https://schema.org/CreativeWork">
+    
+    <h2 class="archive__item-title no_toc" itemprop="headline">
+      
+        <a href="/2024/03/10/first-post/" rel="permalink">First post
+</a>
+      
+    </h2>
+    
 
-<p>Once you have successfully generated your token, keep it handy because we’re going to use it soon! For more details on the API token, please see <a href="https://www.qualtrics.com/support/integrations/api-integration/overview/">Qualtrics’ guide</a></p>
+  <p class="page__meta">
+    
 
-<h2 id="step-2-qualtrics">Step 2: QualtRics</h2>
+    
 
-<p>As you can imagine, talking to an API ain’t easy. You got to do some GET requests, learn it in R, learn about the particulars of <a href="https://api.qualtrics.com/">Qualtrics’ API</a>. Luckily for us, there’s a package called <a href="https://github.com/ropensci/qualtRics">QualtRics</a> that has done most of the heavy lifting. All we have to do is set up our API token from earlier and use their library commands.</p>
+    
+      
+      
 
-<h2 id="qualtrics-authorization">Qualtrics authorization</h2>
-<p>My method to going about this is to create a R script and save it in the same folder as my Qualtrics wrangling code/notebook. Use the following code below as a template for your R script credential.</p>
+      <span class="page__meta-readtime">
+        <i class="far fa-clock" aria-hidden="true"></i>
+        
+          less than 1 minute read
+        
+      </span>
+    
+  </p>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>library(qualtRics)
 
-qualtrics_api_credentials(api_key = "&lt;YOUR-QUALTRICS_API_KEY&gt;", 
-                          base_url = "&lt;YOUR-QUALTRICS_BASE_URL&gt;",
-                          install = TRUE)
-</code></pre></div></div>
-<p>You’ll notice that two fields have to be filled in for this to work.The API key is the API token we generated from earlier. The base url can be found using <a href="https://api.qualtrics.com/1aea264443797-base-url-and-datacenter-i-ds">this Qualtrics document</a>.</p>
+    <p class="archive__item-excerpt" itemprop="description">This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.
+</p>
+  </article>
+</div>
 
-<p>If you’re working from a Canadian institution, you’re likely going to use “https://ca1.qualtrics.com/API/v3” for your base_url since there’s only one Canadian Qualtrics datacenter. Check <a href="https://api.qualtrics.com/YXBpOjYwOTEz-data-access-ap-is">here</a> for other base urls if you’re from an US institution.</p>
+        
+      </div>
+    </div>
+  
+  
+</div>
 
-<p>Once you have your R script credential set up, insert the following chunk in the document you plan on using to access Qualtrics surveys.</p>
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>source("qualtrics_key.R")
-</code></pre></div></div>
+    </div>
 
-<h2 id="code-and-query">Code and query</h2>
+    
 
-<p>Now that we’ve set up our authentication, we should be able to access our Qualtrics account and connect to our surveys. The following code below should return the names of all your surveys. If this doesn’t work, that probably means the authentication key is not working and you’ll have to go back to troubleshoot.</p>
+    <div id="footer" class="page__footer">
+      <footer>
+        <!-- start custom footer snippets -->
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Retrieve all survey names in account
-survey_list &lt;- all_surveys() 
-survey_list
-</code></pre></div></div>
+<!-- end custom footer snippets -->
+        <div class="page__footer-follow">
+  <ul class="social-icons">
+    
+      <li><strong>Follow:</strong></li>
+    
 
-<p>For my case, I was interested in extracting the surveys that were related to a COVID-19 study from my lab. I use regular expression to filter out survey names related to COVID-19. Feel free to substitute the “covid” string for your own filter purposes. There are two fields in this output you’ll want to take note of. The first is survey <code class="language-plaintext highlighter-rouge">name</code>, which is the name that you’ve given to your suvey. The second is survey <code class="language-plaintext highlighter-rouge">id</code>, which is an unique identifier that Qualtrics gives to each of your surveys. We’ll use this information later.</p>
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Filter covid-related study surveys
-covid_survey_list &lt;- survey_list %&gt;% as_tibble() %&gt;% filter(str_detect(name,regex("covid", ignore_case = T))) 
-</code></pre></div></div>
+    
+      <li><a href="/feed.xml"><i class="fas fa-fw fa-rss-square" aria-hidden="true"></i> Feed</a></li>
+    
+  </ul>
+</div>
 
-<p>The function that extracts surveys is <code class="language-plaintext highlighter-rouge">fetch_survey()</code>. There are several parameters in this function for you to explore. I’ll be simply going over my use case but feel free to check out <a href="https://docs.ropensci.org/qualtRics/reference/fetch_survey.html">the documentation</a> for more information.</p>
+<div class="page__footer-copyright">&copy; 2024 Jason Zheng. Powered by <a href="https://jekyllrb.com" rel="nofollow">Jekyll</a> &amp; <a href="https://mademistakes.com/work/minimal-mistakes-jekyll-theme/" rel="nofollow">Minimal Mistakes</a>.</div>
 
-<p>I wanted to read every survey as separate RDS files into a designated folder. I have a code chunk below to achieve this, feel free to adapt it. Remember to change <code class="language-plaintext highlighter-rouge">project_directory</code> to your desired location.</p>
+      </footer>
+    </div>
 
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># Save each covid survey within temporary directory and read into environment
-for (i in 1:nrow(covid_survey_list)){
-  assign(covid_survey_list$name[i], 
-         fetch_survey(surveyID = covid_survey_list$id[i],
-                      unanswer_recode = -99,
-                      save_dir = project_directory
-                      ))
-}
-</code></pre></div></div>
+    
+  <script src="/assets/js/main.min.js"></script>
 
-<p>I’ll now go over each parameter input.</p>
 
-<p>Surveys are requested by on survey <code class="language-plaintext highlighter-rouge">id</code>. Notice that I created a table earlier that maps survey <code class="language-plaintext highlighter-rouge">id</code> to <code class="language-plaintext highlighter-rouge">name</code>. I identified the surveys I wanted by <code class="language-plaintext highlighter-rouge">name</code> and then map it to <code class="language-plaintext highlighter-rouge">id</code>. <code class="language-plaintext highlighter-rouge">id</code> is also fixed and isn’t subject to change. I like using this for name assignment because the workflow will be more likely reproducible.</p>
 
-<p><code class="language-plaintext highlighter-rouge">fetch_survey()</code> works by first saving the files to a temporary file folder but you can add the <code class="language-plaintext highlighter-rouge">save_dir</code> parameter to specify a target folder.</p>
 
-<p><code class="language-plaintext highlighter-rouge">unanswer_code</code> represents questions that are seen but unanswered: To differentiate from simply not finishing the survey, I assign a <code class="language-plaintext highlighter-rouge">-99</code> value to this scenario.</p>
 
-<p><span style="color:red"><strong><em>Warning</em></strong> </span>: When you download a Qualtrics survey manually, the exported datetime fields are dependent on the timzezone set in your account settings. However, API-exported survey data have datetime set as UTC by default. See <a href="https://www.qualtrics.com/support/survey-platform/data-and-analysis-module/data/download-data/understanding-your-dataset/">here for data export documentation</a>.</p>
 
-<h2 id="summary">Summary</h2>
 
-<p>This has been an overview of how to connect to Qualtrics surveys in R. We reviewed how to create API credentials and access surveys via the <code class="language-plaintext highlighter-rouge">QualtRics</code> package. I hope you found this guide helpful, feel free to contact me for feedback or questions!</p>]]></content><author><name>Jason</name></author><summary type="html"><![CDATA[Introduction - Qualtrics and R]]></summary></entry><entry><title type="html">First post</title><link href="http://localhost:4000/2024/03/10/first-post/" rel="alternate" type="text/html" title="First post" /><published>2024-03-10T00:00:00-08:00</published><updated>2024-03-10T00:00:00-08:00</updated><id>http://localhost:4000/2024/03/10/first-post</id><content type="html" xml:base="http://localhost:4000/2024/03/10/first-post/"><![CDATA[<p>This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.</p>
 
-<h1 id="syntax">Syntax</h1>
 
-<p>We can make headings!</p>
 
-<h1 id="heading-1">Heading 1</h1>
-<h2 id="heading-2">Heading 2</h2>
-<h3 id="heading-3">Heading 3</h3>
-<h4 id="heading-4">Heading 4</h4>
-
-<p>Text can be <strong>bold</strong>, <em>italicized</em>, or <strong><em>both</em></strong>.</p>
-
-<blockquote>
-  <p>We can also make block quotes.</p>
-</blockquote>
-
-<ol>
-  <li>Lists</li>
-  <li>Can be</li>
-  <li>Ordered</li>
-</ol>
-
-<ul>
-  <li>Lists</li>
-  <li>Can also be</li>
-  <li>Not ordered</li>
-</ul>
-
-<p>We can upload pictures.
-<img src="/assets/img/cat_face.jpeg" alt="We can upload pictures" /></p>
-
-<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>We can make code blocks.
-</code></pre></div></div>
-
-<p><del>Strike through words.</del></p>
-
-<ul class="task-list">
-  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" checked="checked" />Complete a task list</li>
-  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Finish my analyses</li>
-  <li class="task-list-item"><input type="checkbox" class="task-list-item-checkbox" disabled="disabled" />Save the world</li>
-</ul>
-
-<p>Unfortunately we have to use html tags to natively subscript<sub>2</sub>, superscript<sup>2</sup>, and <mark>highlight</mark>.</p>
-
-<p>We also have to use html to natively use 🙄 .</p>
-
-<table>
-  <thead>
-    <tr>
-      <th>We can</th>
-      <th>make tables</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>very</td>
-      <td>conveniently</td>
-    </tr>
-  </tbody>
-</table>
-
-<p>We can use a sentence with a footnote. <sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote" rel="footnote">1</a></sup></p>
-<div class="footnotes" role="doc-endnotes">
-  <ol>
-    <li id="fn:1" role="doc-endnote">
-      <p>This is the footnote. <a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
-    </li>
-  </ol>
-</div>]]></content><author><name>Jason Zheng</name><email>jzheng1995@gmail.com</email></author><summary type="html"><![CDATA[This is my first post! This is a blog post built with Jekyll and Markdown, hosted on Github. Let’s see what we can do.]]></summary></entry></feed>
+  </body>
+</html>

@@ -6,7 +6,7 @@ search: false
 @charset "utf-8";
 
 @import "minimal-mistakes/skins/{{ site.minimal_mistakes_skin | default: 'default' }}"; // skin
-@import "minimal-mistakes"; // main partials    
+@import "minimal-mistakes"; // main partials
 
 #repo-content-turbo-frame .blob-code-content td.blob-code {
     white-space: normal !important;

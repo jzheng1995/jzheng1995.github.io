@@ -47,6 +47,12 @@ var store = [{
         "url": "/2024/08/03/pet-identifier/",
         "teaser": null
       },{
+        "title": "Vertex Deployment",
+        "excerpt":"Vertex AI Pipelines: Training and deloying ML models using google cloud Overview In this brief tutorial, we will explore how to build an AutoML tabular classification workflow using the google_cloud_pipeline_components SDK in Vertex AI Pipelines. The steps covered include setting up a pipeline to train a model using the UCI...","categories": [],
+        "tags": [],
+        "url": "/2024/09/14/vertex-deployment/",
+        "teaser": null
+      },{
         "title": "Python 01: Pipelines",
         "excerpt":"naive-pipeline.knit 1 Python pipelines In this notebook we’ll be exploring how to use data pipelines to set up a machine learning model. We’ll be using an Online Sales dataset from Kaggle and we’ll be examining what factors would lead to predicting the most revenue. Here’s the setup. import matplotlib as...","categories": [],
         "tags": [],
