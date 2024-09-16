@@ -1,7 +1,7 @@
 ---
 classes: wide
 ---
-## Overview: Vertex AI Pipelines
+## Overview: Google Vertex AI Pipelines
 
 In this brief tutorial, we will explore how to build an AutoML tabular classification workflow using the `google_cloud_pipeline_components` SDK in Vertex AI Pipelines. The steps covered include setting up a pipeline to train a model using the UCI 'Dry Beans' dataset and deploying the trained model on a Vertex AI Endpoint.
 
